@@ -14,7 +14,9 @@ import {
   analyzeRgbSamplesForColorTransfer,
   estimateLipsyncPace,
   buildCustomPreset,
-  formatStoryboardExport
+  formatStoryboardExport,
+  buildGeminiDirectorMetaPrompt,
+  cleanGeminiEnhancedOutput
 } from "../sidepanel/compiler.js";
 
 test("preset catalog includes 110+ Stage 1 looks, 47 Stage 2 camera+Kinetic VFX moves, and zero brand leakage", () => {
@@ -247,4 +249,24 @@ test("Kinetic VFX preset compiles Start->End object morph beats without anti-mor
   assert.match(morphPrompt, /Morph directly into chrome sculptural sports coupe/);
   assert.match(morphPrompt, /kinetic transformation/);
   assert.equal(/zero ghosting or limb morphing/.test(morphPrompt), false);
+});
+
+test("buildGeminiDirectorMetaPrompt & cleanGeminiEnhancedOutput preserve locks and strip conversational chatter", () => {
+  const meta = buildGeminiDirectorMetaPrompt("5.0s cinema shot (16:9): Rain-slicked courier.", {
+    stage: "stage2",
+    duration: "5s",
+    aspect: "16:9",
+    characterLock: "@courier_kai",
+    endObject: "chrome hypercar"
+  });
+  assert.match(meta, /\[HIGGSFOLD DIRECTOR ENHANCE\]/);
+  assert.match(meta, /@courier_kai/);
+  assert.match(meta, /chrome hypercar/);
+
+  const messy = `Sure, here is your enhanced prompt:\n\n\`\`\`text\n5.0s kinetic cinema shot (16:9): Slicked courier transforms seamlessly.\n\`\`\``;
+  assert.equal(
+    cleanGeminiEnhancedOutput(messy),
+    "5.0s kinetic cinema shot (16:9): Slicked courier transforms seamlessly."
+  );
+  assert.equal(cleanGeminiEnhancedOutput('"Quoted cinema prompt."'), "Quoted cinema prompt.");
 });

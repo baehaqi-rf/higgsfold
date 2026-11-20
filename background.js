@@ -36,9 +36,50 @@ async function fetchMediaAsDataUrl(url) {
   return { ok: true, dataUrl, mimeType, byteLength: bytes.length };
 }
 
+async function enhanceWithGeminiApi({ apiKey, model = "gemini-2.5-flash", metaPrompt }) {
+  if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) {
+    throw new Error("Gemini API Key is missing.");
+  }
+  if (!metaPrompt || !metaPrompt.trim()) {
+    throw new Error("Blueprint prompt is empty.");
+  }
+  const safeModel = encodeURIComponent(model.trim() || "gemini-2.5-flash");
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`;
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey.trim()
+    },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: metaPrompt }] }],
+      generationConfig: {
+        temperature: 0.65,
+        maxOutputTokens: 700
+      }
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errMsg = data?.error?.message || `Gemini API HTTP ${res.status}`;
+    throw new Error(errMsg);
+  }
+  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("").trim();
+  if (!text) {
+    throw new Error("Gemini API returned an empty response.");
+  }
+  return { ok: true, enhancedText: text };
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "HIGGSFOLD_FETCH_MEDIA_BLOB") {
     fetchMediaAsDataUrl(message.url)
+      .then((res) => sendResponse(res))
+      .catch((err) => sendResponse({ ok: false, error: err?.message || String(err) }));
+    return true;
+  }
+  if (message?.type === "HIGGSFOLD_GEMINI_API_ENHANCE") {
+    enhanceWithGeminiApi(message.payload || {})
       .then((res) => sendResponse(res))
       .catch((err) => sendResponse({ ok: false, error: err?.message || String(err) }));
     return true;

@@ -21,7 +21,9 @@ import {
   generateShortDramaStoryboard,
   estimateLipsyncPace,
   buildCustomPreset,
-  formatStoryboardExport
+  formatStoryboardExport,
+  buildGeminiDirectorMetaPrompt,
+  cleanGeminiEnhancedOutput
 } from "./compiler.js";
 import {
   extractColorTransferFromFile,
@@ -41,7 +43,8 @@ const STORAGE_KEYS = {
   customPresets: "customPresets",
   storyboard: "storyboard",
   selectors: "customSelectors",
-  workspaceState: "workspaceState"
+  workspaceState: "workspaceState",
+  geminiSettings: "geminiSettings"
 };
 
 const WORKSPACE_PERSIST_FIELDS = [
@@ -240,6 +243,12 @@ const el = {
   chkAutoSync: document.getElementById("chk-autosync"),
   // Output & Footer
   compiledPreview: document.getElementById("compiled-preview"),
+  btnAiMaximize: document.getElementById("btn-ai-maximize"),
+  btnAiSettings: document.getElementById("btn-ai-settings"),
+  aiSettingsRow: document.getElementById("ai-settings-row"),
+  selectAiEngine: document.getElementById("select-ai-engine"),
+  selectGeminiApiModel: document.getElementById("select-gemini-api-model"),
+  inputGeminiApiKey: document.getElementById("input-gemini-apikey"),
   btnResetCompiled: document.getElementById("btn-reset-compiled"),
   btnSaveShot: document.getElementById("btn-save-shot"),
   charCount: document.getElementById("char-count"),
@@ -335,6 +344,7 @@ const el = {
 };
 
 let isInjecting = false;
+let isMaximizing = false;
 let motionVideoObjectUrl = "";
 let motionVideoFile = null;
 let motionSheetDataUrl = "";
@@ -1992,6 +2002,106 @@ el.btnResetCompiled.addEventListener("click", () => {
   showToast("Recompiled from active preset & controls");
 });
 
+// Hybrid Tools + Gemini AI Director Maximize
+const saveGeminiSettings = () => {
+  storageSet({
+    [STORAGE_KEYS.geminiSettings]: {
+      aiEngine: el.selectAiEngine?.value || "tab",
+      apiModel: el.selectGeminiApiModel?.value || "gemini-2.5-flash",
+      apiKey: el.inputGeminiApiKey?.value || ""
+    }
+  }).catch(() => {});
+};
+
+el.btnAiSettings?.addEventListener("click", () => {
+  el.aiSettingsRow?.classList.toggle("hidden");
+});
+el.selectAiEngine?.addEventListener("change", saveGeminiSettings);
+el.selectGeminiApiModel?.addEventListener("change", saveGeminiSettings);
+el.inputGeminiApiKey?.addEventListener("input", saveGeminiSettings);
+
+async function resolveGeminiTab() {
+  try {
+    if (chrome?.tabs?.query) {
+      const geminiTabs = await chrome.tabs.query({ url: "https://gemini.google.com/*" });
+      if (geminiTabs && geminiTabs.length > 0) {
+        return geminiTabs.find((t) => t.active) || geminiTabs[0];
+      }
+    }
+  } catch (_) {}
+  const active = await checkActiveTab();
+  if (active?.url && active.url.includes("gemini.google.com")) {
+    return active;
+  }
+  return null;
+}
+
+el.btnAiMaximize?.addEventListener("click", async () => {
+  if (isMaximizing) return;
+  const blueprint = (el.compiledPreview.value || "").trim();
+  if (!blueprint) {
+    showToast("Compile or enter a blueprint prompt first");
+    return;
+  }
+
+  const metaPrompt = buildGeminiDirectorMetaPrompt(blueprint, state);
+  const engine = el.selectAiEngine?.value || "tab";
+  const apiKey = (el.inputGeminiApiKey?.value || "").trim();
+  const apiModel = el.selectGeminiApiModel?.value || "gemini-2.5-flash";
+
+  isMaximizing = true;
+  el.btnAiMaximize.disabled = true;
+  const prevText = el.btnAiMaximize.textContent;
+  el.btnAiMaximize.textContent = "Maximizing…";
+
+  try {
+    let rawEnhanced = "";
+    if (engine === "api") {
+      if (!apiKey) {
+        el.aiSettingsRow?.classList.remove("hidden");
+        showToast("Enter your Gemini API Key in ⚙ or switch to Gemini Web Tab");
+        return;
+      }
+      const res = await chrome.runtime.sendMessage({
+        type: "HIGGSFOLD_GEMINI_API_ENHANCE",
+        payload: { apiKey, model: apiModel, metaPrompt }
+      });
+      if (!res?.ok) throw new Error(res?.error || "Gemini API request failed");
+      rawEnhanced = res.enhancedText;
+    } else {
+      const gemTab = await resolveGeminiTab();
+      if (!gemTab) {
+        el.aiSettingsRow?.classList.remove("hidden");
+        showToast("Open gemini.google.com (Hydrogen/Neon) in a tab, or set API Key in ⚙");
+        return;
+      }
+      showToast("Asking Gemini Web Tab to maximize prompt…");
+      const res = await sendMessageWithAutoBridge(gemTab.id, {
+        type: "HIGGSFOLD_GEMINI_ENHANCE",
+        payload: { metaPrompt, timeoutMs: 45000 }
+      });
+      if (!res?.ok) throw new Error(res?.error || "Could not get response from Gemini tab");
+      rawEnhanced = res.enhancedText;
+    }
+
+    const cleaned = cleanGeminiEnhancedOutput(rawEnhanced);
+    if (!cleaned) throw new Error("Gemini returned empty text");
+
+    state.manualOverride = true;
+    el.compiledPreview.value = cleaned;
+    el.btnResetCompiled.classList.remove("hidden");
+    el.charCount.textContent = `${cleaned.length} chars`;
+    await saveToHistory(cleaned);
+    showToast("Prompt maximized by Gemini AI Director!");
+  } catch (err) {
+    showToast(err?.message || "Gemini enhance failed");
+  } finally {
+    isMaximizing = false;
+    el.btnAiMaximize.disabled = false;
+    el.btnAiMaximize.textContent = prevText;
+  }
+});
+
 // [BUG-15] Clean offscreen textarea copy fallback for ANY text (e.g. Storyboard scripts)
 async function copyText(text, successMsg) {
   try {
@@ -2461,7 +2571,8 @@ async function boot() {
   try {
     const stored = await storageGet([
       STORAGE_KEYS.customPresets,
-      STORAGE_KEYS.workspaceState
+      STORAGE_KEYS.workspaceState,
+      STORAGE_KEYS.geminiSettings
     ]);
     if (stored.customPresets) {
       state.customPresets = {
@@ -2475,6 +2586,17 @@ async function boot() {
           state[k] = stored.workspaceState[k];
         }
       });
+    }
+    if (stored.geminiSettings && typeof stored.geminiSettings === "object") {
+      if (el.selectAiEngine && stored.geminiSettings.aiEngine) {
+        el.selectAiEngine.value = stored.geminiSettings.aiEngine;
+      }
+      if (el.selectGeminiApiModel && stored.geminiSettings.apiModel) {
+        el.selectGeminiApiModel.value = stored.geminiSettings.apiModel;
+      }
+      if (el.inputGeminiApiKey && stored.geminiSettings.apiKey) {
+        el.inputGeminiApiKey.value = stored.geminiSettings.apiKey;
+      }
     }
   } catch (_) {}
 

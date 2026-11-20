@@ -818,6 +818,80 @@
       return true;
     }
 
+    if (message.type === "HIGGSFOLD_GEMINI_ENHANCE") {
+      (async () => {
+        const { metaPrompt, timeoutMs = 45000 } = message.payload || {};
+        if (!metaPrompt) {
+          sendResponse({ ok: false, error: "Meta-prompt is empty." });
+          return;
+        }
+        const host = window.location.hostname;
+        const inputEl = findFirstVisible(SITE_PROFILES.gemini.input, false);
+        if (getSiteKey(host) !== "gemini" && !inputEl) {
+          sendResponse({ ok: false, error: "Open gemini.google.com tab (with Hydrogen/Neon/Pro selected) first." });
+          return;
+        }
+        if (!inputEl) {
+          sendResponse({ ok: false, error: "Gemini prompt box not found on page." });
+          return;
+        }
+
+        const respSelector =
+          'model-response message-content, message-content, .model-response-text, [data-message-author-role="model"]';
+        const readResponses = () => querySelectorAllDeep(respSelector);
+        const beforeNodes = readResponses();
+        const beforeCount = beforeNodes.length;
+        const beforeLastText =
+          beforeCount > 0
+            ? (beforeNodes[beforeCount - 1].innerText || beforeNodes[beforeCount - 1].textContent || "").trim()
+            : "";
+
+        writeValueToElement(inputEl, metaPrompt);
+        const sendBtn = await waitForEnabledSubmit(SITE_PROFILES.gemini.submit, 1200);
+        if (!sendBtn) {
+          sendResponse({ ok: false, error: "Gemini Send button did not become active." });
+          return;
+        }
+        sendBtn.click();
+
+        const start = Date.now();
+        let lastObserved = "";
+        let stableTicks = 0;
+
+        while (Date.now() - start <= timeoutMs) {
+          await new Promise((r) => setTimeout(r, 220));
+          const nowNodes = readResponses();
+          const nowLast =
+            nowNodes.length > 0
+              ? (nowNodes[nowNodes.length - 1].innerText || nowNodes[nowNodes.length - 1].textContent || "").trim()
+              : "";
+          const hasNewReply =
+            Boolean(nowLast) &&
+            (nowNodes.length > beforeCount || nowLast !== beforeLastText);
+          if (!hasNewReply) continue;
+
+          const stopBtn = findFirstVisible(['button[aria-label*="Stop" i]'], false);
+          if (nowLast === lastObserved && !stopBtn) {
+            stableTicks += 1;
+            if (stableTicks >= 2) {
+              sendResponse({ ok: true, enhancedText: nowLast });
+              return;
+            }
+          } else {
+            lastObserved = nowLast;
+            stableTicks = 0;
+          }
+        }
+
+        if (lastObserved) {
+          sendResponse({ ok: true, enhancedText: lastObserved });
+        } else {
+          sendResponse({ ok: false, error: "Timed out waiting for Gemini response." });
+        }
+      })();
+      return true;
+    }
+
     if (message.type === "HIGGSFOLD_INJECT_PROMPT") {
       (async () => {
         const { prompt, autoSubmit } = message.payload;

@@ -356,6 +356,14 @@
 
     geminiSendBtn.addEventListener("click", () => {
       log("Gemini Send message clicked!");
+      setTimeout(() => {
+        const ws = document.getElementById("gemini-workspace");
+        const reply = document.createElement("div");
+        reply.className = "model-response-text";
+        reply.style.cssText = "margin-top:8px;padding:8px;border-radius:6px;background:#101015;font-size:11.5px;color:#d1fe17;";
+        reply.textContent = "5.0s kinetic cinema shot (16:9): Rain-beaded matte obsidian running sneaker locks center pedestal as viscous chrome ripples across suede panels, transforming into a mirror-polished hypercar with dramatic wet asphalt reflections.";
+        ws.appendChild(reply);
+      }, 220);
     });
 
     // Chrome Extension API Shim for Playtesting
@@ -393,8 +401,16 @@
         }
       },
       tabs: {
-        async query() {
-          return [{ id: 1, url: simulatedUrl }];
+        async query(queryInfo) {
+          if (queryInfo?.url) {
+            const urls = Array.isArray(queryInfo.url) ? queryInfo.url : [queryInfo.url];
+            const matches = urls.some((pat) => {
+              const host = pat.replace(/^https?:\/\//, "").split("/")[0].replace("*", "");
+              return simulatedUrl.includes(host);
+            });
+            return matches ? [{ id: 1, url: simulatedUrl, active: true }] : [];
+          }
+          return [{ id: 1, url: simulatedUrl, active: true }];
         },
         async sendMessage(_tabId, msg) {
           return new Promise((resolve) => {

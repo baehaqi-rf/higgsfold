@@ -4,8 +4,8 @@
 
 ## Complete Studio Capabilities (v4.0)
 
-1. **Temporal Beat Prose Compiler, Physics Guardrails & Kinetic VFX (Stage 1 & Stage 2):**
-   - **Prose Cinema Mode (Default):** Compiles natural-language temporal beats (`0.0s–1.3s`, `1.3s–4.0s`, `4.0s–5.0s`, or proportional split across up to 3 sequential moves) with toggleable `Guardrails` and legacy `Structured` breakdown mode.
+1. **Temporal Beat Prose Compiler, Physics Guardrails, Kinetic VFX & Hybrid Gemini AI Maximize (Stage 1 & Stage 2):**
+   - **Prose Cinema Mode (Default) + `✨ AI Maximize`:** Compiles natural-language temporal beats (`0.0s–1.3s`, `1.3s–4.0s`, `4.0s–5.0s`, or proportional split across up to 3 sequential moves) locally in 0ms, then optionally clicks **`✨ AI Maximize`** to enrich physical textures, micro-lighting & choreography via your open **Gemini Web Tab** (`gemini.google.com`, supporting whatever model you pick such as Hydrogen/Neon/Pro) or an optional local **Gemini REST API Key** (`gemini-2.5-flash` / `gemini-2.5-pro`). Use **`Recompile`** anytime to revert to the deterministic Tools blueprint.
    - **Stage 2 — 47 Camera & Kinetic VFX Presets:** 35 Cinema Studio 4.0 camera trajectories with directional hover preview animations plus **12 Kinetic Object & Typography VFX Presets** (*Liquid Metal Morph, Shatter Reassemble, Match-Cut Swap, Elastic Pop Transform, Magnetic Assembly, Particle Vortex Morph, Origami Fold Unwrap, Chromatic Glitch Swap, Gravity Slam Morph, Molten Glass Morph, Vortex Portal Shift, 3D Kinetic Typo Punch*) using morph-aware guardrails and optional **Morph Target B**.
    - **Dual-Keyframe Pipeline (`0/2` References):** Upload Start Frame (A) + End Morph Target (B) and attach sequentially (`Send A→B to Flow`) for Google Flow `Frames` Start→End transitions.
    - **Stage 1 — 113 Keyframe & Soul Studio Looks:** Across 10 categories with search, category filter pills, and deduplicated optical/lighting specs.

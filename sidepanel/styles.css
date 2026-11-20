@@ -1223,6 +1223,13 @@ select option {
   gap: 6px;
 }
 
+.ai-settings-row {
+  background: var(--color-surface-tertiary);
+  border: 1px solid var(--qc-border-subtle);
+  border-radius: 10px;
+  padding: 8px;
+}
+
 .compiled-box {
   font-family: var(--font-mono);
   font-size: 10.5px;

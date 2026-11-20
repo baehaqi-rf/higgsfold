@@ -122,6 +122,15 @@ function createMockDom({ hostname, site }) {
     }, 50);
   });
 
+  const geminiReply = makeEl("div", { class: "model-response-text" });
+  geminiReply.textContent = "Maximized cinema prompt with rain-soaked highlights.";
+  let geminiResponded = false;
+  geminiBtn.addEventListener("click", () => {
+    setTimeout(() => {
+      geminiResponded = true;
+    }, 60);
+  });
+
   // Flow settings popover mock
   const settingsBtn = makeEl("button", {
     class: "settings-trigger-button",
@@ -220,6 +229,7 @@ function createMockDom({ hostname, site }) {
         if (sel.includes("Settings trigger")) return [settingsBtn];
       }
       if (site === "gemini") {
+        if (sel.includes("model-response-text")) return geminiResponded ? [geminiReply] : [];
         if (sel.includes("ql-editor") || sel.includes("Enter a prompt for Gemini")) return [geminiEditor];
         if (sel.includes("Send message")) return [geminiBtn];
       }
@@ -446,4 +456,15 @@ test("bridge.js traverses open ShadowRoot and grabs >= 256px generated outputs",
   assert.equal(grabbed.ok, true);
   assert.equal(grabbed.items.length, 1);
   assert.equal(grabbed.items[0].width, 512);
+});
+
+test("bridge.js HIGGSFOLD_GEMINI_ENHANCE sends meta-prompt to Gemini tab and captures reply", async () => {
+  const gemCtx = createMockDom({ hostname: "gemini.google.com", site: "gemini" });
+  const res = await gemCtx.dispatchMsg({
+    type: "HIGGSFOLD_GEMINI_ENHANCE",
+    payload: { metaPrompt: "[HIGGSFOLD DIRECTOR ENHANCE] Blueprint test", timeoutMs: 3000 }
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.enhancedText, "Maximized cinema prompt with rain-soaked highlights.");
+  assert.equal(gemCtx.geminiBtn.clicked, 1);
 });

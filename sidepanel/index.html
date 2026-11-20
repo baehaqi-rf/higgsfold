@@ -559,8 +559,32 @@
           <div class="section-header">
             <h2>Compiled Director Prompt</h2>
             <div class="section-tools">
+              <button id="btn-ai-maximize" class="pill-btn" type="button" title="Maximize Blueprint via Gemini AI (Hydrogen / Neon / API)">✨ AI Maximize</button>
+              <button id="btn-ai-settings" class="text-btn" type="button" title="Gemini AI Director Settings">⚙</button>
               <button id="btn-reset-compiled" class="text-btn hidden" type="button">Recompile</button>
               <span class="meta-badge" id="char-count">0 chars</span>
+            </div>
+          </div>
+          <div id="ai-settings-row" class="ai-settings-row hidden">
+            <div class="controls-grid">
+              <div class="control-item">
+                <label for="select-ai-engine">AI Director Engine</label>
+                <select id="select-ai-engine" class="compact-input">
+                  <option value="tab">Gemini Web Tab (Hydrogen / Neon)</option>
+                  <option value="api">Gemini REST API Key</option>
+                </select>
+              </div>
+              <div class="control-item" id="ai-api-model-wrap">
+                <label for="select-gemini-api-model">API Model</label>
+                <select id="select-gemini-api-model" class="compact-input">
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                </select>
+              </div>
+              <div class="control-item" id="ai-api-key-wrap" style="grid-column:1/-1;">
+                <label for="input-gemini-apikey">Gemini API Key (Stored Locally Only — Leave empty to use open Gemini Tab)</label>
+                <input id="input-gemini-apikey" type="password" class="compact-input" placeholder="AIza... (optional, from aistudio.google.com)" />
+              </div>
             </div>
           </div>
           <textarea id="compiled-preview" class="compiled-box" rows="5"></textarea>

@@ -794,3 +794,66 @@ export function formatStoryboardExport(shots) {
     )
     .join("\n\n");
 }
+
+/**
+ * Build a precision Cinema Director meta-prompt around HiggsFold's deterministic blueprint
+ * so Gemini (Hydrogen / Neon / Flash / Pro) enriches physical lighting, materiality,
+ * texture, and choreography without breaking temporal beats, optics, @handles, or guardrails.
+ */
+export function buildGeminiDirectorMetaPrompt(blueprintPrompt, state = {}) {
+  const engineTarget =
+    state.stage === "stage1" ? "Nano Banana 2.1 still keyframe" : "Google Flow / Omni 1.2 Flash video";
+  const lockNote = (state.characterLock || "").trim()
+    ? `\n- Preserve this exact Character/@Element Lock verbatim: ${state.characterLock.trim()}`
+    : "";
+  const endObjNote = (state.endObject || "").trim()
+    ? `\n- Preserve this exact End Morph Target cleanly: ${state.endObject.trim()}`
+    : "";
+  const durNote =
+    state.stage === "stage1"
+      ? ""
+      : `\n- Keep exact temporal pacing matching ${state.duration || "5s"} and aspect ratio ${state.aspect || "16:9"}.`;
+
+  return [
+    `[HIGGSFOLD DIRECTOR ENHANCE]`,
+    `Act as an Academy Award-winning Cinematographer & VFX Supervisor upgrading this ${engineTarget} prompt blueprint to production quality.`,
+    `Strict rules:`,
+    `- Retain ALL camera choreography, temporal timestamps (0.0s–...), optics/lens, color palette grade, physics guardrails, and audio design present in the blueprint.${durNote}${lockNote}${endObjNote}`,
+    `- Upgrade sparse nouns/actions into vivid physical materiality (surface reflections, micro-textures, atmospheric particulates, dynamic light interaction, subtle subject micro-acting) while keeping the prompt focused under ~1,400 characters.`,
+    `- Output ONLY the final polished prompt text. Zero conversational intro, zero markdown code fences, zero bullet points, zero explanations.`,
+    ``,
+    `BLUEPRINT:`,
+    (blueprintPrompt || "").trim()
+  ].join("\n");
+}
+
+/**
+ * Strip accidental conversational preambles, surrounding quotes, or markdown code fences
+ * returned by an LLM so the enhanced prompt injects cleanly into Google Flow.
+ */
+export function cleanGeminiEnhancedOutput(rawText) {
+  let out = String(rawText || "").trim();
+  if (!out) return "";
+
+  // Remove fenced code blocks if Gemini wrapped the prompt
+  const fenceMatch = out.match(/```(?:text|prompt|markdown)?\s*([\s\S]*?)```/i);
+  if (fenceMatch && fenceMatch[1]) {
+    out = fenceMatch[1].trim();
+  }
+
+  // Remove common chatty lead-in lines
+  out = out.replace(
+    /^(?:sure|here(?:'s| is)|certainly|below is)[^\n:]*:\s*\n+/i,
+    ""
+  ).trim();
+
+  // Unwrap wrapping quotes if entire prompt was quoted
+  if (
+    (out.startsWith('"') && out.endsWith('"')) ||
+    (out.startsWith("'") && out.endsWith("'"))
+  ) {
+    out = out.slice(1, -1).trim();
+  }
+
+  return out;
+}
