@@ -70,7 +70,7 @@ function createMockDom({ hostname, site }) {
       },
       dispatchEvent(evt) {
         (elListeners.get(evt.type) || []).forEach((fn) => fn(evt));
-        return true;
+        return !evt.defaultPrevented;
       },
       closest(sel) {
         if (sel.includes("button") && this.tagName === "BUTTON") return this;
@@ -130,19 +130,46 @@ function createMockDom({ hostname, site }) {
   const popover = makeEl("div", { class: "cdk-overlay-pane hidden" });
   const radioImage = makeEl("button", { role: "radio" }); radioImage.textContent = "Image";
   const radioVideo = makeEl("button", { role: "radio" }); radioVideo.textContent = "Video";
+  const radioFrames = makeEl("button", { role: "radio" }); radioFrames.textContent = "Frames to Video";
+  const radioIngredients = makeEl("button", { role: "radio" }); radioIngredients.textContent = "Ingredients to Video";
+  const radio169 = makeEl("button", { role: "radio" }); radio169.textContent = "16:9";
   const radio916 = makeEl("button", { role: "radio" }); radio916.textContent = "9:16";
   const radioX2 = makeEl("button", { role: "radio" }); radioX2.textContent = "x2";
+  const modelBtn = makeEl("button", { "aria-label": "Select model family" }); modelBtn.textContent = "Imagen 3";
+  const veoItem = makeEl("button", { role: "menuitem", class: "mat-mdc-menu-item" }); veoItem.textContent = "Veo 3.1 - Fast";
   popover.appendChild(radioImage);
   popover.appendChild(radioVideo);
+  popover.appendChild(radioFrames);
+  popover.appendChild(radioIngredients);
+  popover.appendChild(radio169);
   popover.appendChild(radio916);
   popover.appendChild(radioX2);
+  popover.appendChild(modelBtn);
   popover.querySelectorAll = (sel) => {
     if (sel && sel.includes("Select model family")) return [];
-    return [radioImage, radioVideo, radio916, radioX2];
+    return [radioImage, radioVideo, radioFrames, radioIngredients, radio169, radio916, radioX2];
   };
   popover.querySelector = (sel) => {
-    if (sel && sel.includes("role=\"radio\"")) return radioImage;
+    if (sel && sel.includes("Select model family")) return modelBtn;
+    if (sel && sel.includes('role="radio"')) return radioImage;
     return null;
+  };
+
+  // Generated media mock (>= 256px vs small 32px avatar)
+  const smallIconImg = makeEl("img", { _rect: { top: 10, left: 10, width: 32, height: 32 } });
+  smallIconImg.currentSrc = "https://lh3.googleusercontent.com/avatar32.png";
+  const largeGenImg = makeEl("img", { alt: "Generated portrait", _rect: { top: 50, left: 50, width: 512, height: 512 } });
+  largeGenImg.currentSrc = "https://lh3.googleusercontent.com/generated512.png";
+
+  // Shadow DOM host mock for Shadow DOM traversal test
+  const shadowEditor = makeEl("textarea", { "aria-label": "Shadow prompt" });
+  const shadowHost = makeEl("custom-shadow-host");
+  shadowHost.shadowRoot = {
+    querySelectorAll(sel) {
+      if (sel === "*") return [shadowEditor];
+      if (sel.includes("Shadow prompt")) return [shadowEditor];
+      return [];
+    }
   };
   settingsBtn.addEventListener("click", () => {
     if (popover.classList.contains("hidden")) popover.classList.remove("hidden");
@@ -175,6 +202,15 @@ function createMockDom({ hostname, site }) {
       return null;
     },
     querySelectorAll(sel) {
+      if (sel === "*") {
+        return site === "shadow" ? [shadowHost] : [];
+      }
+      if (sel.includes("img, video")) {
+        return [smallIconImg, largeGenImg];
+      }
+      if (sel.includes("menuitem")) {
+        return [veoItem];
+      }
       if (sel.includes(".cdk-overlay-pane:not(.hidden)")) {
         return popover.classList.contains("hidden") ? [] : [popover];
       }
@@ -205,9 +241,39 @@ function createMockDom({ hostname, site }) {
     InputEvent: class InputEvent { constructor(t) { this.type = t; } },
     Event: class Event { constructor(t) { this.type = t; } },
     KeyboardEvent: class KeyboardEvent { constructor(t) { this.type = t; } },
-    ClipboardEvent: class ClipboardEvent { constructor(t) { this.type = t; } },
-    DragEvent: class DragEvent { constructor(t) { this.type = t; } },
-    DataTransfer: class DataTransfer { constructor() { this.items = { add() {} }; } setData() {} },
+    ClipboardEvent: class ClipboardEvent {
+      constructor(t, init = {}) {
+        this.type = t;
+        this.clipboardData = init.clipboardData;
+        this.defaultPrevented = false;
+      }
+      preventDefault() { this.defaultPrevented = true; }
+    },
+    DragEvent: class DragEvent {
+      constructor(t, init = {}) {
+        this.type = t;
+        this.dataTransfer = init.dataTransfer;
+        this.defaultPrevented = false;
+      }
+    },
+    DataTransfer: class DataTransfer {
+      constructor() {
+        const list = [];
+        this.files = list;
+        this.items = { add(f) { list.push(f); } };
+      }
+      setData() {}
+    },
+    File: class File {
+      constructor(parts, name, opts = {}) {
+        this.parts = parts;
+        this.name = name;
+        this.type = opts.type || "image/png";
+      }
+    },
+    fetch: async () => ({
+      blob: async () => ({ type: "image/png" })
+    }),
     HTMLTextAreaElement: { prototype: {} },
     HTMLInputElement: { prototype: {} },
     chrome: {
@@ -247,8 +313,13 @@ function createMockDom({ hostname, site }) {
     geminiEditor,
     geminiBtn,
     radioImage,
+    radioVideo,
+    radioIngredients,
+    radio169,
     radio916,
     radioX2,
+    veoItem,
+    shadowEditor,
     storage,
     document,
     workspaceBackdrop
@@ -313,4 +384,66 @@ test("bridge.js Bind UI picker ignores 1200x900 workspace container and normaliz
     ctx.storage.customSelectors["flow.google.com"].submit,
     'button[aria-label="Start generation"]'
   );
+});
+
+test("bridge.js syncs Video sub-mode (Ingredients), maps 2.39:1 -> 16:9, and matches Model priority list", async () => {
+  const ctx = createMockDom({ hostname: "flow.google.com", site: "flow" });
+  const res = await ctx.dispatchMsg({
+    type: "HIGGSFOLD_SYNC_FLOW_SETTINGS",
+    payload: {
+      mode: "Video",
+      videoSubMode: "Ingredients",
+      aspectRatio: "2.39:1",
+      modelHints: ["Omni 1.2 Flash", "Veo 3.1"]
+    }
+  });
+  assert.equal(res.ok, true);
+  assert.ok(res.synced.includes("SubMode:Ingredients to Video"));
+  assert.ok(res.synced.includes("AR:16:9(from 2.39:1)"));
+  assert.ok(res.synced.includes("Model:Veo 3.1 - Fast"));
+  assert.equal(ctx.radioIngredients.clicked, 1);
+  assert.equal(ctx.radio169.clicked, 1);
+  assert.equal(ctx.veoItem.clicked, 1);
+});
+
+test("bridge.js HIGGSFOLD_INJECT_IMAGE uses single-path waterfall (no duplicate drop if paste handled)", async () => {
+  const ctx = createMockDom({ hostname: "flow.google.com", site: "flow" });
+  let pasteCount = 0;
+  let dropCount = 0;
+  ctx.flowEditor.addEventListener("paste", (e) => {
+    pasteCount += 1;
+    e.preventDefault();
+  });
+  ctx.flowEditor.addEventListener("drop", () => {
+    dropCount += 1;
+  });
+
+  const res = await ctx.dispatchMsg({
+    type: "HIGGSFOLD_INJECT_IMAGE",
+    payload: { dataUrl: "data:image/png;base64,AA==", fileName: "ref.png", mimeType: "image/png" }
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.method, "paste");
+  assert.equal(pasteCount, 1);
+  assert.equal(dropCount, 0, "Must NOT fire drop when paste already handled attachment");
+});
+
+test("bridge.js traverses open ShadowRoot and grabs >= 256px generated outputs", async () => {
+  const shadowCtx = createMockDom({ hostname: "shadow.example.com", site: "shadow" });
+  shadowCtx.storage.customSelectors["shadow.example.com"] = {
+    input: 'textarea[aria-label="Shadow prompt"]',
+    submit: ""
+  };
+  const inj = await shadowCtx.dispatchMsg({
+    type: "HIGGSFOLD_INJECT_PROMPT",
+    payload: { prompt: "Shadow Prompt", autoSubmit: false }
+  });
+  assert.equal(inj.ok, true);
+  assert.equal(shadowCtx.shadowEditor.value, "Shadow Prompt");
+
+  const flowCtx = createMockDom({ hostname: "flow.google.com", site: "flow" });
+  const grabbed = await flowCtx.dispatchMsg({ type: "HIGGSFOLD_GRAB_LATEST_MEDIA" });
+  assert.equal(grabbed.ok, true);
+  assert.equal(grabbed.items.length, 1);
+  assert.equal(grabbed.items[0].width, 512);
 });

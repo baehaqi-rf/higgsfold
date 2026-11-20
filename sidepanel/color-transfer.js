@@ -1,17 +1,14 @@
-// HiggsFold Studio v3.0 — Client-Side Color Transfer & Image Encoder
+// HiggsFold Studio v4.0 — Client-Side Color Transfer & Image Encoder
 import { analyzeRgbSamplesForColorTransfer } from "./compiler.js";
 
 /**
- * Extract dominant 5-hex Color Transfer grading & base64 dataURL from an image File.
+ * Extract Color Transfer semantic grading summary & swatches from a base64 Data URL.
  */
-export async function extractColorTransferFromFile(file) {
-  const dataUrl = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Failed to read reference image"));
-    reader.readAsDataURL(file);
-  });
-
+export async function extractColorTransferFromDataUrl(
+  dataUrl,
+  name = "reference.png",
+  type = "image/png"
+) {
   const img = await new Promise((resolve, reject) => {
     const el = new Image();
     el.onload = () => resolve(el);
@@ -35,10 +32,27 @@ export async function extractColorTransferFromFile(file) {
 
   const analysis = analyzeRgbSamplesForColorTransfer(samples);
   return {
-    name: file.name,
-    type: file.type || "image/png",
+    name,
+    type,
     dataUrl,
     swatches: analysis.swatches,
     summary: analysis.summary
   };
+}
+
+/**
+ * Extract Color Transfer semantic grading & base64 dataURL from an image File.
+ */
+export async function extractColorTransferFromFile(file) {
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Failed to read reference image"));
+    reader.readAsDataURL(file);
+  });
+  return extractColorTransferFromDataUrl(
+    dataUrl,
+    file.name,
+    file.type || "image/png"
+  );
 }

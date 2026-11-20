@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HiggsFold v2.0 — REA Ground-Truth Playtest Bench</title>
+  <title>HiggsFold v4.0 — REA Ground-Truth Playtest Bench</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -208,6 +208,10 @@
             <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">Image</button>
             <button type="button" role="radio" aria-checked="true" class="mat-button-toggle-button">Video</button>
           </div>
+          <div class="radio-group" data-group="submode">
+            <button type="button" role="radio" aria-checked="true" class="mat-button-toggle-button">Frames to Video</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">Ingredients to Video</button>
+          </div>
           <div class="radio-group" data-group="aspect">
             <button type="button" role="radio" aria-checked="true" class="mat-button-toggle-button">16:9</button>
             <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">9:16</button>
@@ -257,6 +261,11 @@
       </div>
 
       <div class="mock-card">
+        <h2>Simulated Generated Output (>= 256px for Grab Output Test)</h2>
+        <img id="mock-generated-output" width="280" height="280" alt="Simulated Flow output frame" style="border-radius:10px;border:1px solid #2e2e36;display:block;" />
+      </div>
+
+      <div class="mock-card">
         <h2>Bridge Telemetry &amp; Verification Log</h2>
         <div id="telemetry-log" class="event-log">Ready. Waiting for HiggsFold injection or sync...</div>
       </div>
@@ -283,7 +292,21 @@
     const geminiMicBtn = document.getElementById("gemini-mic-btn");
     const geminiSendBtn = document.getElementById("gemini-send-btn");
 
-    const flowState = { mode: "Video", aspect: "16:9", batch: "x1" };
+    const flowState = { mode: "Video", submode: "Frames to Video", aspect: "16:9", batch: "x1" };
+    // Render a real 280x280 colorful canvas output so Grab Output + Color Transfer work offline in playtest
+    (() => {
+      const c = document.createElement("canvas");
+      c.width = 280;
+      c.height = 280;
+      const ctx = c.getContext("2d");
+      const grad = ctx.createLinearGradient(0, 0, 280, 280);
+      grad.addColorStop(0, "#0b2e33");
+      grad.addColorStop(0.55, "#d1fe17");
+      grad.addColorStop(1, "#ff6a2b");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 280, 280);
+      document.getElementById("mock-generated-output").src = c.toDataURL("image/png");
+    })();
     function refreshFlowSummary() {
       flowSettingsBtn.textContent = `${flowState.mode} · 720p · 8s ${flowState.batch}`;
     }

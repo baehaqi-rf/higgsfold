@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "HiggsFold Studio — AI Director Side Panel",
-  "version": "3.0.0",
-  "description": "Full Higgsfield Cinema Studio 4.0, Soul (106+ looks), 35 Camera Moves, Lipsync, Motion Control, Short Drama, Color Transfer & Editing Room Side Panel for Google Flow, Gemini & AI Studio.",
+  "version": "4.0.0",
+  "description": "HiggsFold Studio v4.0 — AI Director Side Panel with Temporal Prose Compiler, Soul Vault, Color Transfer, Lipsync, Motion Control, Drama Arcs, Grab Output & NLE Editing Room.",
   "permissions": [
     "sidePanel",
     "activeTab",
@@ -13,7 +13,10 @@
     "https://flow.google.com/*",
     "https://labs.google/*",
     "https://gemini.google.com/*",
-    "https://aistudio.google.com/*"
+    "https://aistudio.google.com/*",
+    "https://lh3.googleusercontent.com/*",
+    "https://*.googleusercontent.com/*",
+    "https://storage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js"

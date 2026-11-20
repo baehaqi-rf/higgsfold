@@ -1,6 +1,6 @@
 ﻿# HiggsFold — Commit & Push to GitHub (Windows PowerShell)
 param(
-  [string]$Message = "feat: HiggsFold v3.0 (113 Soul presets, 35 camera moves, 20 palettes, Lipsync, Motion Control, Short Drama, Color Transfer & Editing Room)"
+  [string]$Message = "feat: HiggsFold Studio v4.0 (Temporal Prose, Grab Output, Soul Vault, Contact Sheet & NLE Editing Room)"
 )
 
 $ErrorActionPreference = "Stop"

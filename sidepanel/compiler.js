@@ -1,5 +1,5 @@
-// HiggsFold Studio v3.0 — Pure Prompt Compilers, Drama Generator & Color Transfer Analyzer
-// Covers all 5 studios: Motion (Stage 2), Keyframe/Soul (Stage 1), Lipsync, Motion Control, Short Drama
+// HiggsFold Studio v4.0 — Temporal Beat Prose & Structured Prompt Compilers,
+// Drama Arc Generator, Lipsync Pace Estimator & Colorist Color Transfer Analyzer
 
 import {
   INTENSITY_MODIFIERS,
@@ -13,8 +13,12 @@ import {
   LIPSYNC_EMOTIONS,
   LIPSYNC_FRAMINGS,
   LIPSYNC_VOICES,
-  MOTION_CONTROL_MODES
+  MOTION_CONTROL_MODES,
+  DRAMA_STORY_ARCS
 } from "./presets.js";
+
+const ANTI_MORPH_GUARDRAIL =
+  "Maintain rigid anatomical consistency, single-subject identity lock, crisp lighting parallax, zero ghosting or limb morphing, and physically accurate cloth and motion momentum throughout the shot.";
 
 function findOptionText(list, id) {
   const found = list.find((item) => item.id === id);
@@ -30,10 +34,14 @@ function buildOpticsLine(state) {
   return parts.join(" ");
 }
 
-function buildFilmSetupLine(state) {
+function buildFilmSetupLine(state, proseMode = false) {
   const genre = findOptionText(FILM_GENRES, state.genre || "auto");
   const era = findOptionText(FILM_ERAS, state.era || "auto");
   if (!genre && !era) return "";
+  if (proseMode) {
+    if (genre && era) return `Rendered in a ${era} aesthetic with ${genre}.`;
+    return `Rendered with ${genre || era}.`;
+  }
   if (genre && era) return `Film Style: ${era} paired with ${genre}.`;
   return `Film Style: ${genre || era}.`;
 }
@@ -50,24 +58,136 @@ function buildSubjectWithLock(state, fallback) {
   return charLock ? `${rawSubject} (Character/@Element Lock: ${charLock})` : rawSubject;
 }
 
+function buildProseSubject(state, fallback) {
+  const rawSubject = (state.subject || "").trim() || fallback;
+  const charLock = (state.characterLock || "").trim();
+  return charLock ? `${rawSubject}, keeping strict identity consistency for ${charLock}` : rawSubject;
+}
+
+export function parseDurationSeconds(duration) {
+  const num = parseFloat(String(duration || "5s").replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(num) || num <= 0) return 5;
+  return Math.min(30, Math.max(2, num));
+}
+
 /**
- * Compile structured prompt for Stage 1 (Keyframe/Soul), Stage 2 (Motion),
+ * Estimate whether spoken dialogue fits cleanly inside the target video duration.
+ * Natural cinema dialogue sits around 2.2 - 2.6 words/sec.
+ */
+export function estimateLipsyncPace(dialogue, duration = "5s") {
+  const durationSec = parseDurationSeconds(duration);
+  const words = String(dialogue || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  const maxRecommended = Math.max(3, Math.round(durationSec * 2.6));
+  const tightLimit = Math.ceil(maxRecommended * 1.25);
+  const wordsPerSec = Number((words / durationSec).toFixed(1));
+
+  if (words === 0) {
+    return {
+      words: 0,
+      durationSec,
+      maxRecommended,
+      wordsPerSec: 0,
+      status: "empty",
+      label: `0 words • ~${maxRecommended} words recommended for ${durationSec}s`
+    };
+  }
+  if (words <= maxRecommended) {
+    return {
+      words,
+      durationSec,
+      maxRecommended,
+      wordsPerSec,
+      status: "ok",
+      label: `${words}w / ~${maxRecommended}w max (${wordsPerSec} w/s • Natural Pace)`
+    };
+  }
+  if (words <= tightLimit) {
+    return {
+      words,
+      durationSec,
+      maxRecommended,
+      wordsPerSec,
+      status: "tight",
+      label: `${words}w / ~${maxRecommended}w max (${wordsPerSec} w/s • Brisk Delivery)`
+    };
+  }
+  return {
+    words,
+    durationSec,
+    maxRecommended,
+    wordsPerSec,
+    status: "fast",
+    label: `${words}w / ~${maxRecommended}w max (${wordsPerSec} w/s • Too Long — Raise Duration or Trim)`
+  };
+}
+
+function buildTemporalStage2Beats(selectedPresets, intensityText, durSec) {
+  if (selectedPresets.length === 1) {
+    const p = selectedPresets[0];
+    const t1 = (durSec * 0.25).toFixed(1);
+    const t2 = (durSec * 0.8).toFixed(1);
+    const t3 = durSec.toFixed(1);
+    return [
+      `0.0s–${t1}s: Open cleanly on the subject with balanced foreground depth as ${p.name} momentum initiates.`,
+      `${t1}s–${t2}s: ${p.cameraTrajectory} Execute with ${intensityText}.`,
+      `${t2}s–${t3}s: Ease-out deceleration settling onto the final hero framing; ${p.physicsSpec}`
+    ].join(" ");
+  }
+
+  const seg = durSec / selectedPresets.length;
+  const phases = selectedPresets.map((p, idx) => {
+    const start = (idx * seg).toFixed(1);
+    const end = (idx === selectedPresets.length - 1 ? durSec : (idx + 1) * seg).toFixed(1);
+    return `${start}s–${end}s (${p.name}): ${p.cameraTrajectory}`;
+  });
+  return `${phases.join(" ")} Connect phases with fluid, uninterrupted camera handoff and ${intensityText}.`;
+}
+
+/**
+ * Compile prompt for Stage 1 (Keyframe/Soul), Stage 2 (Motion),
  * Stage 3 (Lipsync Studio), or Stage 4 (Motion Control).
+ * Defaults to temporal natural-language "prose" mode (Flow / Omni 1.2 native);
+ * pass `promptFormat: "structured"` for labeled production breakdown sheets.
  */
 export function compilePrompt(state, stage1Presets, stage2Presets) {
+  const proseMode = state.promptFormat !== "structured";
+  const useGuardrails = state.guardrails !== false;
   const lightingObj =
     LIGHTING_MOODS.find((l) => l.id === state.lighting) || LIGHTING_MOODS[0];
   const opticsOverride = buildOpticsLine(state);
-  const filmSetup = buildFilmSetupLine(state);
+  const filmSetup = buildFilmSetupLine(state, proseMode);
   const colorGrade = buildColorGradeLine(state);
+  const durSec = parseDurationSeconds(state.duration);
 
   if (state.stage === "stage1") {
+    const preset =
+      stage1Presets.find((p) => p.id === state.selectedStage1Id) || stage1Presets[0];
+
+    if (proseMode) {
+      const subjectText = buildProseSubject(
+        state,
+        "Hero subject from uploaded reference image positioned naturally in scene"
+      );
+      const segments = [
+        `A cinematic ${state.aspect || "16:9"} still keyframe of ${subjectText}.`,
+        opticsOverride ? `${preset.lensSpec} ${opticsOverride}` : preset.lensSpec,
+        preset.compositionRule,
+        [preset.lightingSpec, lightingObj.text, colorGrade].filter(Boolean).join(" "),
+        filmSetup
+      ];
+      if (useGuardrails) {
+        segments.push(preset.soulLockDirective);
+      }
+      return segments.filter(Boolean).join(" ");
+    }
+
     const subjectText = buildSubjectWithLock(
       state,
       "[Subject from uploaded reference image positioned in scene]"
     );
-    const preset =
-      stage1Presets.find((p) => p.id === state.selectedStage1Id) || stage1Presets[0];
     const resolutionTag = state.resolution ? ` • ${state.resolution.toUpperCase()}` : "";
     const lensLine = opticsOverride
       ? `${preset.lensSpec} ${opticsOverride}`
@@ -85,15 +205,11 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     ];
 
     if (filmSetup) lines.push(filmSetup);
-    lines.push(`Identity Lock: ${preset.soulLockDirective}`);
+    if (useGuardrails) lines.push(`Identity Lock: ${preset.soulLockDirective}`);
     return lines.join("\n");
   }
 
   if (state.stage === "lipsync") {
-    const subjectText = buildSubjectWithLock(
-      state,
-      "Close-up speaker looking into lens"
-    );
     const dialogue =
       (state.lipsyncDialogue || "").trim() ||
       "Wait until you see what happens next.";
@@ -101,26 +217,52 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     const framingText = findOptionText(LIPSYNC_FRAMINGS, state.lipsyncFraming || "closeup");
     const voiceText = findOptionText(LIPSYNC_VOICES, state.lipsyncVoice || "natural-id");
     const envAudio = (state.lipsyncAmbience || "").trim() || "quiet intimate studio room tone";
+    const camPreset =
+      state.lipsyncCameraId && state.lipsyncCameraId !== "auto"
+        ? stage2Presets.find((p) => p.id === state.lipsyncCameraId)
+        : null;
 
+    if (proseMode) {
+      const subjectText = buildProseSubject(state, "Close-up speaker looking directly into lens");
+      const visualFinish = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
+        .filter(Boolean)
+        .join(" ");
+      const segments = [
+        `Over 0.0s–${durSec.toFixed(1)}s in ${state.aspect || "9:16"} framing, ${subjectText} delivers spoken dialogue (${framingText}) with ${emotionText}: "${dialogue}".`,
+        camPreset
+          ? `Camera subtly accompanies performance via ${camPreset.name}: ${camPreset.cameraTrajectory}`
+          : "Camera holds steady cinema poise with natural subtle breathing motion.",
+        `Syllable-accurate jaw, lip, and breath synchronization with authentic blinking and facial micro-expressions.`,
+        visualFinish,
+        useGuardrails ? ANTI_MORPH_GUARDRAIL : "",
+        `Audio: ${voiceText}; ambient bed: ${envAudio}.`
+      ];
+      return segments.filter(Boolean).join(" ");
+    }
+
+    const subjectText = buildSubjectWithLock(
+      state,
+      "Close-up speaker looking into lens"
+    );
     const lines = [
       `[LIPSYNC STUDIO • OMNI 1.2 FLASH • ${state.duration} • AR ${state.aspect}]`,
       `Speaker & Framing: ${subjectText}. ${framingText}.`,
       `Spoken Dialogue (Exact Lip-Sync): "${dialogue}"`,
-      `Performance & Expression: ${emotionText}. Exact syllable-accurate jaw, lip, and breath synchronization with natural blinking.`,
-      `Voice & Audio Design: ${voiceText}; background ambience: ${envAudio}.`
+      `Performance & Expression: ${emotionText}. Exact syllable-accurate jaw, lip, and breath synchronization with natural blinking.`
     ];
+    if (camPreset) {
+      lines.push(`Camera Pairing (${camPreset.name}): ${camPreset.cameraTrajectory}`);
+    }
+    lines.push(`Voice & Audio Design: ${voiceText}; background ambience: ${envAudio}.`);
     const visualFinish = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
       .filter(Boolean)
       .join(" ");
     if (visualFinish) lines.push(`Optics & Grade: ${visualFinish}`);
+    if (useGuardrails) lines.push(`Continuity Guardrail: ${ANTI_MORPH_GUARDRAIL}`);
     return lines.join("\n");
   }
 
   if (state.stage === "motion_control") {
-    const subjectText = buildSubjectWithLock(
-      state,
-      "Target character from uploaded portrait/full-body reference"
-    );
     const refAction =
       (state.motionRefDescription || "").trim() ||
       "Subject walks forward with confident stride, turns head sharply toward lens, and raises right hand in subtle gesture";
@@ -131,6 +273,34 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     const camPreset =
       stage2Presets.find((p) => p.id === state.selectedStage2Id) || stage2Presets[0];
 
+    if (proseMode) {
+      const subjectText = buildProseSubject(
+        state,
+        "Target character from uploaded portrait/full-body reference"
+      );
+      const tEnd = durSec.toFixed(1);
+      const visualFinish = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
+        .filter(Boolean)
+        .join(" ");
+      const segments = [
+        `Over 0.0s–${tEnd}s (${state.aspect || "16:9"}), transfer motion reference choreography onto ${subjectText}: ${refAction}.`,
+        modeSpec,
+        `Camera follows with ${camPreset.name}: ${camPreset.cameraTrajectory}`,
+        visualFinish,
+        useGuardrails
+          ? `Preserve exact target face, outfit details, and anatomy without ghosting or limb morphing. ${ANTI_MORPH_GUARDRAIL}`
+          : "",
+        state.includeAudio
+          ? `Audio: ${camPreset.audioCue}`
+          : `Audio: Silent / minimal natural room tone only.`
+      ];
+      return segments.filter(Boolean).join(" ");
+    }
+
+    const subjectText = buildSubjectWithLock(
+      state,
+      "Target character from uploaded portrait/full-body reference"
+    );
     const lines = [
       `[MOTION CONTROL TRANSFER • ${camPreset.name.toUpperCase()} • ${state.duration} • AR ${state.aspect}]`,
       `Target Character: ${subjectText}.`,
@@ -139,6 +309,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
       `Camera Sync: ${camPreset.cameraTrajectory}`,
       `Continuity: Preserve exact target face, outfit details, and anatomy without ghosting or limb morphing. ${[opticsOverride, lightingObj.text, colorGrade].filter(Boolean).join(" ")}`
     ];
+    if (useGuardrails) lines.push(`Guardrail: ${ANTI_MORPH_GUARDRAIL}`);
     if (state.includeAudio) {
       lines.push(`Native Audio Design: ${camPreset.audioCue}`);
     } else {
@@ -147,11 +318,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     return lines.join("\n");
   }
 
-  // Stage 2 (or fallback): Omni 1.2 Flash Multi-Move Camera Motion Compiler
-  const subjectText = buildSubjectWithLock(
-    state,
-    "[Subject from uploaded reference image positioned in scene]"
-  );
+  // Stage 2 (or fallback): Omni 1.2 Flash Temporal Multi-Move Camera Motion Compiler
   const queueIds =
     Array.isArray(state.stage2Queue) && state.stage2Queue.length > 0
       ? state.stage2Queue
@@ -168,6 +335,41 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
   const intensityText =
     INTENSITY_MODIFIERS[state.intensity] || INTENSITY_MODIFIERS.cinematic;
 
+  const physicsUnique = Array.from(
+    new Set(selectedPresets.map((p) => p.physicsSpec.trim()).filter(Boolean))
+  ).join(" ");
+
+  const audioJoined = Array.from(
+    new Set(selectedPresets.map((p) => p.audioCue.trim()).filter(Boolean))
+  ).join(" ");
+
+  if (proseMode) {
+    const subjectText = buildProseSubject(
+      state,
+      "Hero subject positioned clearly in the reference scene"
+    );
+    const temporalBeats = buildTemporalStage2Beats(selectedPresets, intensityText, durSec);
+    const lookParts = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
+      .filter(Boolean)
+      .join(" ");
+    const multiPhysics = selectedPresets.length > 1 ? physicsUnique : "";
+    const segments = [
+      `${durSec.toFixed(1)}s cinema shot (${state.aspect || "16:9"}): ${subjectText}.`,
+      temporalBeats,
+      multiPhysics,
+      lookParts,
+      useGuardrails ? ANTI_MORPH_GUARDRAIL : "",
+      state.includeAudio
+        ? `Audio: ${audioJoined}`
+        : `Audio: Silent / minimal natural room tone only.`
+    ];
+    return segments.filter(Boolean).join(" ");
+  }
+
+  const subjectText = buildSubjectWithLock(
+    state,
+    "[Subject from uploaded reference image positioned in scene]"
+  );
   const titleNames = selectedPresets.map((p) => p.name.toUpperCase()).join(" → ");
   const resolutionTag = state.resolution ? ` • ${state.resolution}` : "";
 
@@ -181,10 +383,6 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     trajectoryBlock = `Camera Sequence (Ordered Multi-Move): ${sequencedSteps} Transition seamlessly across phases with ${intensityText}.`;
   }
 
-  const physicsUnique = Array.from(
-    new Set(selectedPresets.map((p) => p.physicsSpec.trim()).filter(Boolean))
-  ).join(" ");
-
   const physicsParts = [physicsUnique, opticsOverride, lightingObj.text, colorGrade]
     .filter(Boolean)
     .join(" ");
@@ -197,11 +395,9 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
   ];
 
   if (filmSetup) blocks.push(filmSetup);
+  if (useGuardrails) blocks.push(`Guardrail: ${ANTI_MORPH_GUARDRAIL}`);
 
   if (state.includeAudio) {
-    const audioJoined = Array.from(
-      new Set(selectedPresets.map((p) => p.audioCue.trim()).filter(Boolean))
-    ).join(" ");
     blocks.push(`Native Audio Design: ${audioJoined}`);
   } else {
     blocks.push(`Native Audio Design: Silent / minimal natural room tone only.`);
@@ -211,7 +407,8 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
 }
 
 /**
- * Short Drama Studio: Generates a multi-shot storyboard sequence with consistent cast & grade.
+ * Short Drama Studio 2.0: Generates a Master Keyframe + N arc-aware linked shots
+ * with consistent cast, palette, and narrative beat progression.
  */
 export function generateShortDramaStoryboard(options, stage1Presets, stage2Presets) {
   const premise =
@@ -224,25 +421,22 @@ export function generateShortDramaStoryboard(options, stage1Presets, stage2Prese
   const lighting = options.lighting || "match-ref";
   const genre = options.genre || "general";
   const era = options.era || "auto";
+  const promptFormat = options.promptFormat || "prose";
+  const guardrails = options.guardrails !== false;
 
-  const shotBlueprints = [
-    { role: "Establishing Shot", s2Id: "crane-jib-rise", action: `Wide establishing beat: ${premise}` },
-    { role: "Hero Introduction", s2Id: "dolly-push-hero", action: `Medium push-in onto ${cast} reacting to the moment (${premise})` },
-    { role: "Tension Close-Up", s2Id: "slow-zoom-in", action: `Intimate eye-level close-up on ${cast}, subtle emotional shift` },
-    { role: "Dynamic Turn", s2Id: "arc-left", action: `Orbital beat circling ${cast} as tension peaks in the scene` },
-    { role: "Kinetic Peak", s2Id: "crash-zoom-in", action: `Sudden dramatic realization / decisive movement by ${cast}` },
-    { role: "Tracking Follow", s2Id: "side-tracking-follow", action: `Following ${cast} moving decisively through the environment` },
-    { role: "Optical Reveal", s2Id: "rack-focus-shift", action: `Focus shift revealing critical story detail near ${cast}` },
-    { role: "Ending Pullback", s2Id: "aerial-pullback", action: `Closing beat pulling away from ${cast} into the wider world` }
-  ];
+  const arc =
+    DRAMA_STORY_ARCS.find((a) => a.id === options.arcId) || DRAMA_STORY_ARCS[0];
 
+  const baseId = Date.now();
   const shots = [];
-  // Shot 0: Master Keyframe anchor in Stage 1
+
   const keyframePrompt = compilePrompt(
     {
       stage: "stage1",
+      promptFormat,
+      guardrails,
       selectedStage1Id: options.keyframePresetId || stage1Presets[0]?.id,
-      subject: `Master Drama Keyframe: ${premise}`,
+      subject: `Master Drama Keyframe (${arc.label}): ${premise}`,
       characterLock: cast,
       aspect,
       resolution: "2k",
@@ -259,22 +453,37 @@ export function generateShortDramaStoryboard(options, stage1Presets, stage2Prese
   );
 
   shots.push({
-    id: Date.now(),
+    id: `${baseId}-kf`,
     stage: "DRAMA • KEYFRAME",
-    preset: "Master Anchor",
+    preset: `Master Anchor (${arc.label})`,
+    cameraId: null,
     prompt: keyframePrompt,
     createdAt: "Drama"
   });
 
+  const extraFallbackMoves = [
+    { shotType: "KINETIC PEAK", cameraId: "crash-zoom-in", actionVerb: "punches forward abruptly at the turning point of" },
+    { shotType: "TRACKING FOLLOW", cameraId: "side-tracking-follow", actionVerb: "glides alongside decisive movement through" },
+    { shotType: "OPTICAL REVEAL", cameraId: "rack-focus-shift", actionVerb: "shifts focal depth cleanly toward a critical clue in" },
+    { shotType: "CLOSING VISTAS", cameraId: "aerial-pullback", actionVerb: "pulls backward and skyward leaving the world around" }
+  ];
+
   for (let i = 0; i < count; i++) {
-    const bp = shotBlueprints[i % shotBlueprints.length];
-    const presetObj = stage2Presets.find((p) => p.id === bp.s2Id) || stage2Presets[0];
+    const bp = arc.beats[i] || extraFallbackMoves[(i - arc.beats.length) % extraFallbackMoves.length];
+    const presetObj = stage2Presets.find((p) => p.id === bp.cameraId) || stage2Presets[0];
+    const actionDesc =
+      i === 0
+        ? `${bp.shotType}: ${cast} ${bp.actionVerb} ${premise}`
+        : `Shot ${i + 1}/${count} (${bp.shotType}): ${cast} ${bp.actionVerb} ${premise}`;
+
     const prompt = compilePrompt(
       {
         stage: "stage2",
+        promptFormat,
+        guardrails,
         selectedStage2Id: presetObj.id,
         stage2Queue: [presetObj.id],
-        subject: `[Shot ${i + 1}/${count} — ${bp.role}] ${bp.action}`,
+        subject: actionDesc,
         characterLock: cast,
         intensity: "cinematic",
         aspect,
@@ -293,9 +502,10 @@ export function generateShortDramaStoryboard(options, stage1Presets, stage2Prese
       stage2Presets
     );
     shots.push({
-      id: Date.now() + i + 1,
+      id: `${baseId}-shot-${i + 1}`,
       stage: `DRAMA • SHOT ${i + 1}`,
-      preset: `${bp.role} (${presetObj.name})`,
+      preset: `${bp.shotType} (${presetObj.name})`,
+      cameraId: presetObj.id,
       prompt,
       createdAt: "Drama"
     });
@@ -304,8 +514,64 @@ export function generateShortDramaStoryboard(options, stage1Presets, stage2Prese
   return shots;
 }
 
+function rgbToHsl(r, g, b) {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case rn:
+        h = (gn - bn) / d + (gn < bn ? 6 : 0);
+        break;
+      case gn:
+        h = (bn - rn) / d + 2;
+        break;
+      default:
+        h = (rn - gn) / d + 4;
+        break;
+    }
+    h *= 60;
+  }
+  return { h, s: s * 100, l: l * 100 };
+}
+
+function describeHslAsColoristTerm({ h, s, l }) {
+  if (s < 14) {
+    if (l < 22) return "deep obsidian charcoal";
+    if (l < 42) return "cool slate ash";
+    if (l > 78) return "crisp pearl ivory";
+    return "neutral silver mist";
+  }
+
+  let hueName = "amber ochre";
+  if (h >= 345 || h < 16) hueName = l < 42 ? "deep burgundy crimson" : "warm coral vermilion";
+  else if (h < 34) hueName = l < 45 ? "burnt copper amber" : "warm apricot peach";
+  else if (h < 54) hueName = l < 45 ? "bronze ochre" : "warm honey gold";
+  else if (h < 76) hueName = "olive chartreuse";
+  else if (h < 148) hueName = l < 38 ? "deep emerald moss" : "luminous sage green";
+  else if (h < 178) hueName = l < 42 ? "deep cinema teal" : "seafoam jade";
+  else if (h < 208) hueName = "icy cyan slate";
+  else if (h < 246) hueName = l < 40 ? "midnight cobalt blue" : "cerulean powder blue";
+  else if (h < 282) hueName = "indigo violet";
+  else if (h < 322) hueName = "dusky plum magenta";
+  else hueName = "dusty rose";
+
+  if (s > 65 && l >= 35 && l <= 68) return `rich ${hueName}`;
+  if (s < 32) return `muted ${hueName}`;
+  return hueName;
+}
+
 /**
- * Pure Color Transfer quantization & mood detector from sampled RGBA byte triples.
+ * Pure Color Transfer quantization & natural-language colorist translator.
+ * Converts RGB samples -> HSL shadow/midtone/highlight palette language (no raw #HEX codes in prompt summary)
+ * while retaining hex swatches strictly for UI visualization.
  * @param {Array<[number, number, number]>} rgbSamples
  */
 export function analyzeRgbSamplesForColorTransfer(rgbSamples) {
@@ -313,10 +579,14 @@ export function analyzeRgbSamplesForColorTransfer(rgbSamples) {
     return { swatches: [], summary: "" };
   }
 
-  // Coarse 5-bit color bucketing to find dominant distinct hues
   const buckets = new Map();
   let sumLuma = 0;
   let sumWarmth = 0;
+  const bandTotals = {
+    shadow: new Map(),
+    midtone: new Map(),
+    highlight: new Map()
+  };
 
   for (const [r, g, b] of rgbSamples) {
     sumLuma += 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -331,6 +601,11 @@ export function analyzeRgbSamplesForColorTransfer(rgbSamples) {
     prev.g += g;
     prev.b += b;
     buckets.set(key, prev);
+
+    const hsl = rgbToHsl(r, g, b);
+    const term = describeHslAsColoristTerm(hsl);
+    const band = hsl.l < 32 ? bandTotals.shadow : hsl.l > 68 ? bandTotals.highlight : bandTotals.midtone;
+    band.set(term, (band.get(term) || 0) + 1);
   }
 
   const sorted = Array.from(buckets.values()).sort((a, b) => b.count - a.count);
@@ -355,20 +630,59 @@ export function analyzeRgbSamplesForColorTransfer(rgbSamples) {
     if (swatches.length >= 5) break;
   }
 
+  const topTerm = (map) => {
+    let best = "";
+    let maxCount = 0;
+    for (const [term, count] of map.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        best = term;
+      }
+    }
+    return best;
+  };
+
+  const shadowDesc = topTerm(bandTotals.shadow) || "crisp deep neutral shadows";
+  const midDesc = topTerm(bandTotals.midtone);
+  const highDesc = topTerm(bandTotals.highlight) || "clean natural highlights";
+
   const avgLuma = sumLuma / rgbSamples.length;
   const avgWarmth = sumWarmth / rgbSamples.length;
-  const keyTone = avgLuma < 85 ? "low-key deep shadow" : avgLuma > 170 ? "high-key bright" : "balanced mid-tone";
-  const tempTone = avgWarmth > 18 ? "warm amber-golden bias" : avgWarmth < -18 ? "cool cyan-blue bias" : "neutral color temperature";
-  const hexList = swatches.map((s) => s.hex.toUpperCase()).join(", ");
+  const keyTone =
+    avgLuma < 85
+      ? "low-key moody contrast"
+      : avgLuma > 170
+        ? "high-key airy luminance"
+        : "balanced mid-tone density";
+  const tempTone =
+    avgWarmth > 18
+      ? "warm golden-amber color temperature"
+      : avgWarmth < -18
+        ? "cool cyan-blue atmospheric cast"
+        : "neutral filmic color balance";
+
+  const bandClauses = [`${shadowDesc} shadows`];
+  if (midDesc) bandClauses.push(`${midDesc} midtones`);
+  bandClauses.push(`${highDesc} highlights`);
 
   return {
     swatches: swatches.map((s) => s.hex),
-    summary: `Color Transfer Reference: Match dominant palette [${hexList}] with ${keyTone} exposure and ${tempTone}.`
+    summary: `Color Transfer Reference: Film color grade defined by ${bandClauses.join(", ")}, with ${keyTone} and ${tempTone}.`
   };
+}
+
+function generatePresetId(idSlug) {
+  const randomSuffix =
+    typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID().slice(0, 8)
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  return `custom-${idSlug || "preset"}-${randomSuffix}`;
 }
 
 /**
  * Validate and normalize a user-defined custom preset for Stage 1 or Stage 2.
+ * Preserves existing ID when editing or importing an already-identified preset,
+ * and generates collision-free IDs during synchronous batch imports.
  */
 export function buildCustomPreset(input, stage) {
   const name = (input.name || "").trim();
@@ -379,7 +693,10 @@ export function buildCustomPreset(input, stage) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-  const id = `custom-${idSlug || "preset"}-${Date.now().toString(36)}`;
+  const id =
+    typeof input.id === "string" && input.id.trim()
+      ? input.id.trim()
+      : generatePresetId(idSlug);
   const badge = ((input.badge || "CUSTOM").trim().toUpperCase()).slice(0, 12) || "CUSTOM";
 
   if (stage === "stage1") {

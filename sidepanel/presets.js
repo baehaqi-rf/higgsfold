@@ -1,7 +1,7 @@
-// HiggsFold Studio v3.0 — Complete Higgsfield Cinema Studio 4.0 & Soul Catalog
-// - Stage 1: 14 Cinema Keyframes + 106 Higgsfield Soul Studio Presets (120 total)
-// - Stage 2: All 33 Cinema Studio 4.0 Camera Movements + 2 Action/Track presets (35 total)
-// - All 20 Cinema Studio Color Palettes, Camera Bodies, Lenses, Apertures, Genres, Eras, Lighting
+// HiggsFold Studio v4.0 — Cinema Keyframes, Soul Looks & Camera Motion Catalog
+// - Stage 1: 8 Core Cinema Keyframes + 105 Soul Studio Presets (113 total)
+// - Stage 2: 35 Cinema Camera Movements & Dynamic Rigs
+// - 20 Color Palettes, Camera Bodies, Lenses, Apertures, Genres, Eras, Lighting & Drama Arcs
 // - Lipsync Studio & Motion Control options
 
 export const STAGE1_CATEGORIES = [
@@ -213,7 +213,7 @@ const SOUL_PRESET_DEFS = [
   ["Nicotine glow", "Mood", "EMBER", "moody nocturnal close-up lit by warm ember practicals and curling haze"],
   ["green editorial", "Mood", "EMERALD", "Wong Kar-wai emerald fluorescent key balanced with warm amber shadow fill"],
   ["afterparty cam", "TikTok Core", "LATE", "3am handheld flash snapshot, warm skin sheen, dreamy bokeh city lights"],
-  ["2049", "Surreal", "NEON", "rain-soaked holographic neon orange-teal atmospheric cyberpunk solitude"],
+  ["2049 Hologram", "Surreal", "NEON", "rain-soaked holographic neon orange-teal atmospheric cyberpunk solitude"],
   ["Fireproof", "Surreal", "FIRE", "dramatic golden sparks and warm firelight rim against dark smoke backdrop"],
   ["Night rider", "Mood", "MOTO", "motion-streaked midnight highway lights reflecting off visor and leather"],
   ["chrome exit", "Graphic Art", "CHROME", "liquid chrome specular reflections, futuristic silver metallic studio aesthetic"],
@@ -231,6 +231,19 @@ function slugify(text) {
     .replace(/^-|-$/g, "");
 }
 
+const CATEGORY_OPTICS = {
+  "Camera Presets": "Specialty cinema optics with expressive focal character and crisp center resolution.",
+  Beauty: "Soft-focus portrait prime (85mm f/1.4 equivalent) with creamy skin-tone separation.",
+  "Instagram Aesthetics": "Natural 35mm editorial lifestyle lens with balanced depth and clean micro-contrast.",
+  Mood: "Classic coated cinema prime (50mm f/1.8) preserving rich shadow density and atmospheric falloff.",
+  "TikTok Core": "Candid 28mm wide-normal handheld lens with energetic spatial immediacy.",
+  Editorial: "Medium-format fashion editorial optics with razor-sharp texture fidelity and sculpted falloff.",
+  Surreal: "Anamorphic dream-state optics with expressive depth compression and painterly bokeh.",
+  "Film Simulation": "Emulated analog motion-picture stock with organic silver-halide grain and halation.",
+  Retro: "Vintage multi-coated glass with gentle spherical aberration and nostalgic tonal curve.",
+  "Graphic Art": "Crisp high-acutance studio lens engineered for graphic geometry and bold edge contrast."
+};
+
 function buildSoulPresets() {
   const existingNames = new Set(CORE_STAGE1_PRESETS.map((p) => p.name.toLowerCase()));
   const out = [...CORE_STAGE1_PRESETS];
@@ -239,6 +252,8 @@ function buildSoulPresets() {
     if (existingNames.has(name.toLowerCase())) continue;
     existingNames.add(name.toLowerCase());
     const id = `soul-${slugify(name) || "look"}`;
+    const opticGrammar =
+      CATEGORY_OPTICS[category] || "Modern cinema prime optics with balanced depth separation.";
     out.push({
       id,
       name,
@@ -251,8 +266,8 @@ function buildSoulPresets() {
           : category === "Mood"
             ? "preview-neon-pulse"
             : "preview-subtle-breath",
-      lensSpec: `Higgsfield ${name} visual grammar: ${visualCue}.`,
-      lightingSpec: `Lighting tailored to ${name} style (${visualCue}) with natural highlight roll-off.`,
+      lensSpec: `${name} aesthetic (${category}): ${opticGrammar}`,
+      lightingSpec: `Atmosphere & Lighting (${name}): ${visualCue}, sculpted with natural highlight roll-off.`,
       compositionRule: `Editorial ${category.toLowerCase()} framing supporting clean subject separation.`,
       soulLockDirective:
         "Preserve exact facial identity, proportions, skin texture, and wardrobe continuity from the uploaded reference image."
@@ -260,6 +275,49 @@ function buildSoulPresets() {
   }
   return out;
 }
+
+export const DRAMA_STORY_ARCS = [
+  {
+    id: "cinematic-drama",
+    label: "Cinematic Drama",
+    beats: [
+      { shotType: "WIDE ESTABLISHING", cameraId: "crane-jib-rise", actionVerb: "sets the scale and solitary atmospheric tension in" },
+      { shotType: "HERO TRACKING", cameraId: "dolly-push-hero", actionVerb: "moves deliberately closer as emotion builds inside" },
+      { shotType: "EMOTIONAL CLIMAX", cameraId: "crash-zoom-in", actionVerb: "locks onto a decisive facial realization during" },
+      { shotType: "AFTERMATH REVEAL", cameraId: "dolly-out-reveal", actionVerb: "steps back gently to frame the lingering stillness of" }
+    ]
+  },
+  {
+    id: "luxury-commercial",
+    label: "Luxury Commercial",
+    beats: [
+      { shotType: "HERO PRODUCT REVEAL", cameraId: "slider-right", actionVerb: "glides effortlessly across sculptural form and texture in" },
+      { shotType: "ARCHITECTURAL CONTEXT", cameraId: "arc-left", actionVerb: "circles smoothly around the silhouette against" },
+      { shotType: "SIGNATURE MACRO LOCK", cameraId: "rack-focus-shift", actionVerb: "pulls razor-sharp focus onto tactile craftsmanship inside" },
+      { shotType: "BRAND END-FRAME", cameraId: "static-cinema-lock", actionVerb: "holds a poised, luminous hero tableau within" }
+    ]
+  },
+  {
+    id: "suspense-thriller",
+    label: "Suspense Thriller",
+    beats: [
+      { shotType: "UNEASY OBSERVATION", cameraId: "slow-zoom-in", actionVerb: "creeps imperceptibly toward growing danger inside" },
+      { shotType: "PARANOID TRACK", cameraId: "handheld-docu-follow", actionVerb: "shadows every nervous glance and footstep through" },
+      { shotType: "VERTIGO SHOCK", cameraId: "vertigo-dolly-zoom", actionVerb: "warps perspective abruptly as a twist unfolds in" },
+      { shotType: "SUDDEN ESCAPE / REVEAL", cameraId: "whip-pan-reveal", actionVerb: "snaps violently toward an unseen threat across" }
+    ]
+  },
+  {
+    id: "fashion-lookbook",
+    label: "Fashion Lookbook",
+    beats: [
+      { shotType: "RUNWAY ENTRANCE", cameraId: "low-angle-tracking", actionVerb: "advances with sculptural poise and garment flow through" },
+      { shotType: "SILHOUETTE ORBIT", cameraId: "arc-right", actionVerb: "sweeps around fabric drape and tailoring details in" },
+      { shotType: "EDITORIAL PORTRAIT", cameraId: "pan-right", actionVerb: "frames effortless attitude and gaze inside" },
+      { shotType: "CAMPAIGN CLOSE", cameraId: "dolly-out-reveal", actionVerb: "pulls back cleanly into a full-body cover pose within" }
+    ]
+  }
+];
 
 export const STAGE1_PRESETS = buildSoulPresets();
 
@@ -325,7 +383,7 @@ export const STAGE2_PRESETS = [
     name: "Dolly Out",
     badge: "REVEAL",
     category: "Classic",
-    motionPreview: "preview-crane",
+    motionPreview: "preview-dolly-out",
     defaultDuration: "5s",
     cameraTrajectory: "Begins in an intimate close-up on the subject and smoothly dollies backward on precision tracks, progressively revealing the surrounding environment and spatial story.",
     physicsSpec: "Consistent focal plane tracking, natural foreground frame-edge reveal, zero geometry pop or background morphing.",
@@ -391,7 +449,7 @@ export const STAGE2_PRESETS = [
     name: "Tilt Up",
     badge: "REVEAL",
     category: "Classic",
-    motionPreview: "preview-track",
+    motionPreview: "preview-tilt-up",
     defaultDuration: "5s",
     cameraTrajectory: "Smooth fluid-head tripod vertical tilt upward from ground/wardrobe detail slowly ascending to reveal the subject's face and towering overhead architecture.",
     physicsSpec: "Level horizon axis, zero sideways drift, natural vertical perspective shift.",
@@ -402,7 +460,7 @@ export const STAGE2_PRESETS = [
     name: "Tilt Down",
     badge: "DESCEND",
     category: "Classic",
-    motionPreview: "preview-crane",
+    motionPreview: "preview-tilt-down",
     defaultDuration: "5s",
     cameraTrajectory: "Smooth fluid-head vertical tilt downward from overhead sky or ceiling fixtures onto the hero subject and foreground action.",
     physicsSpec: "Controlled fluid-head deceleration at end frame, crisp optical alignment.",
@@ -424,7 +482,7 @@ export const STAGE2_PRESETS = [
     name: "Pan Left",
     badge: "PAN",
     category: "Classic",
-    motionPreview: "preview-slider",
+    motionPreview: "preview-pan-left",
     defaultDuration: "5s",
     cameraTrajectory: "Steady tripod-mounted horizontal pan sweeping smoothly from right to left across the scene before settling cleanly on the subject.",
     physicsSpec: "Consistent angular velocity with smooth ease-out lock on final composition.",
@@ -435,7 +493,7 @@ export const STAGE2_PRESETS = [
     name: "Pan Right",
     badge: "PAN",
     category: "Classic",
-    motionPreview: "preview-slider",
+    motionPreview: "preview-pan-right",
     defaultDuration: "5s",
     cameraTrajectory: "Steady tripod-mounted horizontal pan sweeping smoothly from left to right across the environment to frame the hero subject.",
     physicsSpec: "Consistent angular velocity with natural cinema shutter cadence and clean horizon.",
@@ -457,7 +515,7 @@ export const STAGE2_PRESETS = [
     name: "Crane Down",
     badge: "DESCEND",
     category: "Aerial",
-    motionPreview: "preview-track",
+    motionPreview: "preview-crane-down",
     defaultDuration: "5s",
     cameraTrajectory: "Starts elevated above the scene looking down, then glides downward smoothly on a cinema crane arm to settle at eye level with the hero subject.",
     physicsSpec: "Balanced vertical horizon leveling, seamless depth transition from wide establishing to intimate portrait.",
@@ -468,7 +526,7 @@ export const STAGE2_PRESETS = [
     name: "Side Tracking",
     badge: "FOLLOW",
     category: "Tracking",
-    motionPreview: "preview-slider",
+    motionPreview: "preview-track",
     defaultDuration: "8s",
     cameraTrajectory: "Parallel lateral tracking shot gliding effortlessly alongside the moving subject at matching speed through foreground pillars or environmental layers.",
     physicsSpec: "Crisp foreground wipe parallax, natural subject stride/motion cadence, stable vertical framing.",
@@ -479,7 +537,7 @@ export const STAGE2_PRESETS = [
     name: "Pedestal Up",
     badge: "ELEVATE",
     category: "Classic",
-    motionPreview: "preview-crane",
+    motionPreview: "preview-pedestal-up",
     defaultDuration: "5s",
     cameraTrajectory: "Vertical camera column pedestal lift moving straight upward without tilting angle, rising cleanly past foreground tables or barriers to reveal the subject.",
     physicsSpec: "True vertical translation without pitch distortion, crisp foreground reveal parallax.",
@@ -490,7 +548,7 @@ export const STAGE2_PRESETS = [
     name: "Pedestal Down",
     badge: "DROP",
     category: "Classic",
-    motionPreview: "preview-track",
+    motionPreview: "preview-pedestal-down",
     defaultDuration: "5s",
     cameraTrajectory: "Vertical camera pedestal descent lowering straight down while keeping horizon perfectly level, transitioning from standing eye-level to low hero stature.",
     physicsSpec: "Pure vertical linear elevation change with smooth motorized damping.",
@@ -556,7 +614,7 @@ export const STAGE2_PRESETS = [
     name: "Static Shot",
     badge: "LOCKED",
     category: "Classic",
-    motionPreview: "preview-subtle-breath",
+    motionPreview: "preview-static",
     defaultDuration: "5s",
     cameraTrajectory: "Rock-solid tripod-locked cinema frame with zero camera translation, letting natural subject micro-acting, wind, lighting, and environmental motion command the shot.",
     physicsSpec: "Zero camera jitter or unintended drift; realistic subtle cloth movement, natural eye blinks, and light shimmer.",
@@ -578,7 +636,7 @@ export const STAGE2_PRESETS = [
     name: "Slow Zoom Out",
     badge: "ISOLATE",
     category: "Optical",
-    motionPreview: "preview-crane",
+    motionPreview: "preview-zoom-out",
     defaultDuration: "8s",
     cameraTrajectory: "Gradual optical zoom pull-out widening focal length from tight portrait into the solitary subject surrounded by expansive architecture.",
     physicsSpec: "Smooth focal decompression revealing wider environmental context cleanly.",
@@ -589,7 +647,7 @@ export const STAGE2_PRESETS = [
     name: "Arc Left",
     badge: "ARC",
     category: "Orbit",
-    motionPreview: "preview-orbit",
+    motionPreview: "preview-arc-left",
     defaultDuration: "5s",
     cameraTrajectory: "Steadicam 90-degree lateral arc sweeping smoothly counter-clockwise (leftward) around the subject from profile to front hero angle.",
     physicsSpec: "Natural light wrap shifting smoothly across facial planes, subtle parallax of background bokeh lights.",
@@ -600,7 +658,7 @@ export const STAGE2_PRESETS = [
     name: "Arc Right",
     badge: "ARC",
     category: "Orbit",
-    motionPreview: "preview-orbit",
+    motionPreview: "preview-arc-right",
     defaultDuration: "5s",
     cameraTrajectory: "Steadicam 90-degree lateral arc sweeping smoothly clockwise (rightward) around the subject to reveal background depth.",
     physicsSpec: "Silky circular tracking motion with consistent subject distance and creamy optical bokeh.",
@@ -611,7 +669,7 @@ export const STAGE2_PRESETS = [
     name: "Truck Left",
     badge: "LATERAL",
     category: "Tracking",
-    motionPreview: "preview-slider",
+    motionPreview: "preview-truck-left",
     defaultDuration: "5s",
     cameraTrajectory: "Camera physically translates straight sideways to the left on a dolly track perpendicular to lens axis, gliding past foreground framing.",
     physicsSpec: "Clean horizontal parallax sweep across foreground, midground, and distant planes.",
@@ -622,7 +680,7 @@ export const STAGE2_PRESETS = [
     name: "Truck Right",
     badge: "LATERAL",
     category: "Tracking",
-    motionPreview: "preview-slider",
+    motionPreview: "preview-truck-right",
     defaultDuration: "5s",
     cameraTrajectory: "Camera physically translates straight sideways to the right on a precision track perpendicular to lens axis.",
     physicsSpec: "Linear lateral tracking motion with rock-steady horizon and optical focus lock.",
@@ -633,7 +691,7 @@ export const STAGE2_PRESETS = [
     name: "Slider Left",
     badge: "SLIDER",
     category: "Classic",
-    motionPreview: "preview-slider",
+    motionPreview: "preview-slider-left",
     defaultDuration: "5s",
     cameraTrajectory: "Short-travel precision motorized macro slider gliding smoothly leftward across product or portrait details.",
     physicsSpec: "Crisp specular light reflections sweeping smoothly across surface textures, ultra-shallow depth-of-field glide.",
@@ -644,7 +702,7 @@ export const STAGE2_PRESETS = [
     name: "Slider Right",
     badge: "SLIDER",
     category: "Classic",
-    motionPreview: "preview-slider",
+    motionPreview: "preview-slider-right",
     defaultDuration: "5s",
     cameraTrajectory: "Short-travel precision motorized macro slider gliding smoothly rightward with subtle 15-degree rotational arc to catch highlights.",
     physicsSpec: "Crisp metallic/glass reflections gliding cleanly across textures with zero micro-jitter.",

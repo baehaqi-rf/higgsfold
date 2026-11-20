@@ -1,56 +1,59 @@
-# HiggsFold Studio v3.0 (Chrome Extension Side Panel)
+# HiggsFold Studio v4.0 (Chrome Extension Side Panel)
 
-**HiggsFold** is a clean-room, Higgsfield Cinema Studio 4.0-inspired **Chrome Side Panel Studio (Manifest V3)** built to run directly on top of your **Google AI Pro** subscription (**Google Flow**, **Google Gemini**, and **Google AI Studio**).
+**HiggsFold** is a zero-dependency **Chrome Side Panel Studio (Manifest V3)** inspired by Cinema Studio 4.0 and built to run directly on top of your **Google AI Pro** subscription (**Google Flow**, **Google Gemini**, and **Google AI Studio**).
 
-## Complete Studio Capabilities (v3.0)
+## Complete Studio Capabilities (v4.0)
 
-1. **Stage 2 — Camera Motion (`Omni 1.2 Flash`):**
-   - **35 Camera Movement Presets** (all 33 Cinema Studio 4.0 movements including *Crush Zoom, Bullet Time, Snorricam, Robot Arm, Rack Focus, Tilt Up/Down, Pan Left/Right, Pedestal Up/Down, Arc Left/Right, Truck Left/Right, Slider Left/Right, Slow Zoom In/Out, Dolly In/Out, Dolly Zoom, Whip Pan, POV, Handheld, Tracking, Drone Orbit, Aerial Pullback, Crane Up/Down, Side Tracking, Static Shot, Helicopter Shot*, plus *FPV Drone Dive* and *Low-Angle Track*).
-   - **Ordered Multi-Move Sequence Chain (`Multi-Move: ON`):** Chain up to **3 camera movements** in order per shot.
-   - Motion Intensity (`Subtle` / `Cinematic` / `Aggressive`), Target Duration (`5s`–`15s`), and Native Audio Cue toggle.
+1. **Temporal Beat Prose Compiler & Physics Guardrails (Stage 1 & Stage 2):**
+   - **Prose Cinema Mode (Default):** Compiles natural-language temporal beats (`0.0s–1.3s`, `1.3s–4.0s`, `4.0s–5.0s`, or proportional split across up to 3 sequential camera moves) with toggleable anti-morphing physics guardrails (`Guardrails`) and legacy `Structured` breakdown mode.
+   - **Stage 2 — 35 Camera Movements:** All Cinema Studio 4.0 camera trajectories with distinct directional hover preview animations (`Pan Left/Right`, `Tilt Up/Down`, `Arc Left/Right`, `Truck Left/Right`, `Slider Left/Right`, `Crane Up/Down`, `Dolly In/Out`).
+   - **Stage 1 — 113 Keyframe & Soul Studio Looks:** Across 10 categories with search, category filter pills, and deduplicated optical/lighting specs.
 
-2. **Stage 1 — Keyframe & Soul Studio (`Nano Banana 2.1`):**
-   - **113 Visual & Soul Presets** across 9 categories (*Cinema, TikTok Core, Instagram Aesthetics, Camera Presets, Beauty, Mood, Surreal, Graphic Art*) with search & category filter pills.
-   - **`@Character / Element` Lock** for identity continuity across shots.
+2. **Closed-Loop Grab Output (`Grab Output`):**
+   - Scans generated `>= 256px` images/videos directly from the active Google Flow or Gemini tab (using MV3 background blob proxying for `googleusercontent.com` / `storage.googleapis.com` and in-page `blob:` conversion).
+   - One-click workflows: **Set Ref + Palette**, **+ Editing Room**, or **+ Soul Vault**.
 
-3. **Lipsync Studio:**
-   - Dedicated dialogue compiler for **Omni 1.2 Flash** with Spoken Dialogue script, Speaker Emotion, Framing (*Tight Talking Head, Medium Waist-Up, Walk & Talk*), Voice/Accent, and Ambience controls.
+3. **Flow Sub-Mode Sync & Resilient Bridge (`content/bridge.js`):**
+   - Open Shadow DOM recursive traversal (`querySelectorAllDeep`), Zero-Width Space normalization, `beforeinput` rich-text support, single-path image waterfall (`paste` -> `file-input` -> `drop`), `Frames` / `Ingredients` Flow sub-mode sync, `2.39:1 -> 16:9` fallback, and priority model matching (`Nano Banana` / `Omni 1.2` / `Veo 3.1`).
+   - **Bind UI** 2-click visual selector calibration.
 
-4. **Motion Control Studio:**
-   - Load and preview local reference motion videos (`.mp4`/`.webm`), describe choreography, select Scene Control (*Follow Video Scene* vs *Keep Character Scene*), and pair with camera sync presets.
+4. **Soul Vault (`Souls` / `@Vault` — IndexedDB):**
+   - Persistent IndexedDB character & style repository (`higgsfold_vault_db`) storing `@handle`, DNA prompt, default Lens/Palette, and up to 4 WebP-compressed reference images (`<= 1024px`).
+   - One-click **Apply Soul** and **Push Refs to Flow**.
 
-5. **Short Drama Studio & Storyboard Shot List:**
-   - Generate a complete multi-shot storyboard (**Master Keyframe + 3 to 8 linked camera shots**) with consistent `@Cast`, Optics, Lighting, and Color Palette, then copy the full production script or inject shots one by one.
+5. **Lipsync Studio & Motion Control Contact Sheet:**
+   - Live speech pace validator (`words/sec` estimator against selected duration) and Camera Pairing (`Select`).
+   - Local `.mp4`/`.webm` frame sampler stitching **3-frame** (`<= 6s`) or **6-frame** (`> 6s`) labeled (`START` / `MID` / `END`) contact sheets directly attachable to Flow.
 
-6. **Pro Optics, Film Setup, 20 Color Palettes & Client-Side Color Transfer:**
-   - Camera Body (`Modern Digital`, `35mm Film`, `8mm Film`, `DV Camcorder`), Lens Glass (`Clean Sharp`, `Anamorphic`, `Vintage Anamorphic`, `Warm Vintage`, `Halation Vintage`), Aperture (`f/1.4`, `f/4`, `f/11`), Film Genre & Era (`1960s`–`2020s`), and all **20 Cinema Studio Color Palettes** with hex swatches.
-   - **Color Transfer & Ref Image Bridge:** Load any reference image to extract a 5-hex dominant palette & lighting mood via `<canvas>`, and paste/drop the image directly into Google Flow or Gemini (`Send Ref to Flow`).
+6. **Short Drama 2.0 & Storyboard Runner:**
+   - 4 narrative **Story Arcs** (*Cinematic Drama, Luxury Commercial, Suspense Thriller, Fashion Lookbook*) generating a Master Keyframe + 3–8 linked shots with `↑/↓` reorder, per-shot direct **Inject**, and JSON/Markdown script export.
 
-7. **Client-Side Editing Room (`Edit`):**
-   - Load generated `.mp4`, `.webm`, or `.png`/`.jpg` clips from Google Flow, reorder shots, preview sequential playback on HTML5 `<canvas>`, and export a combined `.webm` montage via `MediaRecorder`.
-
-8. **Resilient DOM Bridge (`content/bridge.js`):**
-   - Ground-truth selectors for **Google Flow** (`flow.google.com` ProseMirror + `Start generation` + `Settings trigger` popover sync), **Google Gemini** (`gemini.google.com` Quill `rich-textarea` + dynamic `Send message`), and **AI Studio** (`aistudio.google.com`), plus **Bind UI** 2-click visual selector calibration.
+7. **Client-Side NLE Editing Room (`Edit`):**
+   - Aspect-aware HD canvas & WebM export (`16:9 1280×720`, `9:16 720×1280`, `1:1 1080×1080`, `2.39:1 1280×536`), `cover`/`contain` framing without aspect distortion, per-clip **Trim In/Out**, `0.35s` crossfade transitions, and WebAudio `AudioContext` stream multiplexing (`6 Mbps` video + `128 kbps` audio).
 
 ## Project Structure
 
 ```text
 higgsfold/
-├── manifest.json               # Chrome MV3 manifest (flow.google.com, labs.google, gemini, aistudio)
-├── background.js               # Side Panel service worker
+├── manifest.json               # Chrome MV3 manifest (v4.0.0)
+├── background.js               # MV3 Side Panel worker + CORS-free media blob fetcher
 ├── content/
-│   └── bridge.js               # ProseMirror/Quill injector, Image paste/drop, Flow Settings sync & Bind UI
+│   └── bridge.js               # Shadow DOM bridge, single-path image waterfall, Flow sub-mode sync & Grab Output
 ├── sidepanel/
-│   ├── index.html              # 5-Studio Side Panel UI + Editing Room + Storyboard + Preset Builder
-│   ├── styles.css              # Dark Cinema Studio theme (#0a0a0a / #d4ff00)
-│   ├── presets.js              # 113 Stage 1 + 35 Stage 2 presets, 20 Palettes, Optics, Lipsync & Motion Control
-│   ├── compiler.js             # Prompt compilers, Short Drama generator, Color Transfer & validators
-│   ├── color-transfer.js       # Client-side <canvas> 5-hex palette extractor
-│   ├── editing-room.js         # Client-side timeline previewer & WebM MediaRecorder exporter
-│   └── app.js                  # Side Panel state, storage & event controller
+│   ├── index.html              # 5-Studio UI + Grab Output + Soul Vault + Editing Room + Storyboard + Preset Builder
+│   ├── styles.css              # Dark Cinema Studio UI + 16+ directional Stage 2 preview animations
+│   ├── presets.js              # 113 Stage 1 + 35 Stage 2 presets, 20 Palettes, Optics & 4 Drama Story Arcs
+│   ├── compiler.js             # Temporal Prose/Structured compilers, Lipsync pace, Colorist Translator & validators
+│   ├── color-transfer.js       # Client-side <canvas> Colorist semantic palette analyzer
+│   ├── soul-vault.js           # IndexedDB persistent character vault + WebP compressor
+│   ├── motion-extractor.js     # Local video keyframe contact-sheet extractor
+│   ├── editing-room.js         # Client-side NLE (Trim In/Out, Crossfade, WebAudio Mux & HD WebM Export)
+│   └── app.js                  # Debounced workspace persistence, concurrency-locked injection & drawer wiring
 ├── tests/
-│   ├── compiler.test.mjs       # Node.js unit tests (node --test)
-│   └── testbench.html          # Local Flow + Gemini DOM simulator & side panel playtest bench
+│   ├── compiler.test.mjs       # Compiler, prose beats, guardrails, colorist, batch ID tests
+│   ├── bridge.test.mjs         # Bridge DOM, Shadow DOM, Flow sync, Grab Output, waterfall tests
+│   ├── editing-room.test.mjs   # NLE export dimensions, trim clamping, cover/contain & Soul/Motion helpers
+│   └── testbench.html          # Local Flow + Gemini DOM simulator & interactive playtest bench
 ├── icons/                      # 16px, 48px, 128px studio icons
 └── push-to-github.ps1          # PowerShell git commit & push helper
 ```
@@ -62,19 +65,11 @@ higgsfold/
    git clone https://github.com/baehaqi-rf/higgsfold.git
    ```
 2. Open Chrome and navigate to `chrome://extensions/`.
-3. Enable **Developer mode** (top-right toggle).
-4. Click **Load unpacked** and select the `higgsfold` folder.
-5. Open **`https://flow.google.com/`** (or `https://gemini.google.com`) using your Google AI Pro account.
-6. Click the **HiggsFold** icon in the Chrome toolbar to open the Side Panel.
+3. Enable **Developer mode** and click **Load unpacked**, selecting the `higgsfold` folder.
+4. Open **`https://flow.google.com/`** (or `https://gemini.google.com`) and click the **HiggsFold** extension icon.
 
 ## Running Tests
 
 ```bash
-node --test tests/compiler.test.mjs
-```
-
-To run the interactive playtest bench locally:
-```bash
-python -m http.server 8766 --bind 127.0.0.1
-# Open http://127.0.0.1:8766/tests/testbench.html
+node --test tests/compiler.test.mjs tests/bridge.test.mjs tests/editing-room.test.mjs
 ```

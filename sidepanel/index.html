@@ -61,6 +61,7 @@
 
       <div class="hf-side-section">
         <div class="hf-side-label">Studio Tools</div>
+        <button id="btn-side-souls" class="hf-side-link" type="button">Soul Vault (@Characters)</button>
         <button id="btn-side-storyboard" class="hf-side-link" type="button">Storyboard Shots</button>
         <button id="btn-side-editing" class="hf-side-link" type="button">Editing Room</button>
         <button id="btn-side-custom" class="hf-side-link" type="button">Custom Presets</button>
@@ -98,6 +99,9 @@
           <button id="btn-picker" class="icon-btn" type="button" title="Bind DOM Target on active page">
             <span>Bind</span>
           </button>
+          <button id="btn-soul-vault" class="icon-btn" type="button" title="Soul Vault (@Characters &amp; Styles)">
+            <span>Souls</span>
+          </button>
           <button id="btn-custom-preset" class="icon-btn" type="button" title="Custom Preset Builder &amp; JSON">
             <span>+Preset</span>
           </button>
@@ -122,6 +126,7 @@
         <span class="status-dot"></span>
         <span id="status-text">Checking active tab...</span>
         <div class="status-actions">
+          <button id="btn-grab-output" class="pill-btn" type="button" title="Grab latest generated image or video from active page">Grab Output</button>
           <button id="btn-sync-flow" class="pill-btn hidden" type="button">Sync Flow</button>
           <button id="btn-open-flow" class="link-btn" type="button">Open Flow</button>
         </div>
@@ -246,6 +251,7 @@
                     class="hf-inline-input"
                     placeholder="Character / @Element lock (optional, e.g., '@mina_soul, black trench')"
                   />
+                  <button id="btn-pick-soul" class="text-btn accent-link" type="button" title="Choose or save Soul character">@Vault</button>
                 </div>
               </div>
 
@@ -302,6 +308,11 @@
                   <option value="4">x4</option>
                 </select>
 
+                <select id="select-flow-submode" class="hf-chip-select" title="Flow Video Sub-Mode (Frames or Ingredients)">
+                  <option value="Frames" selected>Frames</option>
+                  <option value="Ingredients">Ingredients</option>
+                </select>
+
                 <label id="toggle-audio-wrap" class="hf-chip-toggle" title="Native Audio Cue">
                   <input type="checkbox" id="chk-audio" checked />
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M19.25 4.75a10.25 10.25 0 0 1 0 14.5M15.89 8.11a5.5 5.5 0 0 1 0 7.78M2.75 7.75h2.96c.19 0 .38-.05.54-.16L12.25 3.75v16.5l-6-3.84a1 1 0 0 0-.54-.16H2.75a1 1 0 0 1-1-1V8.75a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
@@ -323,6 +334,14 @@
 
           <!-- Quick Toggles Bar -->
           <div class="hf-dock-flags">
+            <label class="toggle-chip" title="Natural-language Temporal Beat Prose (Flow / Omni 1.2 native)">
+              <input type="checkbox" id="chk-prose" checked />
+              <span>Prose Cinema</span>
+            </label>
+            <label class="toggle-chip" title="Enforce anti-morphing anatomy &amp; parallax guardrails">
+              <input type="checkbox" id="chk-guardrails" checked />
+              <span>Guardrails</span>
+            </label>
             <label class="toggle-chip">
               <input type="checkbox" id="chk-autosubmit" />
               <span>Auto-Click Generate</span>
@@ -340,7 +359,7 @@
         <section id="lipsync-panel" class="panel-section studio-card hidden">
           <div class="section-header">
             <h2>Lipsync Studio (Omni 1.2 Flash)</h2>
-            <span class="meta-badge">Audio-Sync</span>
+            <span id="lipsync-pace-badge" class="meta-badge">0 words</span>
           </div>
           <div class="form-row">
             <label for="lipsync-dialogue">Spoken Dialogue / Script</label>
@@ -350,23 +369,31 @@
             <div class="control-item"><label for="select-lipsync-emotion">Emotion</label><select id="select-lipsync-emotion"></select></div>
             <div class="control-item"><label for="select-lipsync-framing">Framing</label><select id="select-lipsync-framing"></select></div>
             <div class="control-item"><label for="select-lipsync-voice">Voice &amp; Accent</label><select id="select-lipsync-voice"></select></div>
-            <div class="control-item"><label for="lipsync-ambience">Ambience</label><input id="lipsync-ambience" type="text" class="compact-input" placeholder="e.g., soft rain outside" /></div>
+            <div class="control-item"><label for="select-lipsync-camera">Camera Pairing</label><select id="select-lipsync-camera"></select></div>
+            <div class="control-item" style="grid-column:1/-1;"><label for="lipsync-ambience">Ambience</label><input id="lipsync-ambience" type="text" class="compact-input" placeholder="e.g., soft rain outside, quiet intimate room tone" /></div>
           </div>
         </section>
 
         <section id="motion-control-panel" class="panel-section studio-card hidden">
           <div class="section-header">
             <h2>Motion Control Transfer</h2>
-            <span class="meta-badge">Ref Video</span>
+            <span class="meta-badge">Contact Sheet</span>
           </div>
           <div class="form-row">
-            <label for="input-motion-video">Reference Motion Video (Optional Local Preview)</label>
+            <label for="input-motion-video">Reference Motion Video (Local Sample -&gt; Contact Sheet)</label>
             <div class="inline-row">
               <label for="input-motion-video" class="btn-secondary compact-btn file-label">Load .mp4/.webm</label>
               <input id="input-motion-video" type="file" accept="video/*" class="hidden" />
+              <button id="btn-extract-motion-sheet" class="pill-btn hidden" type="button">Extract Contact Sheet</button>
               <span id="motion-video-meta" class="meta-badge">No video loaded</span>
             </div>
             <video id="motion-video-preview" class="motion-ref-video hidden" controls muted playsinline></video>
+            <div id="motion-sheet-wrap" class="motion-sheet-wrap hidden">
+              <img id="motion-sheet-thumb" class="motion-sheet-thumb" alt="Extracted motion keyframes contact sheet" />
+              <div class="inline-row" style="margin-top:6px;">
+                <button id="btn-send-motion-sheet" class="pill-btn" type="button">Attach &amp; Send Contact Sheet to Flow</button>
+              </div>
+            </div>
           </div>
           <div class="form-row">
             <label for="motion-ref-desc">Choreography / Motion to Copy</label>
@@ -381,7 +408,7 @@
         <section id="drama-panel" class="panel-section studio-card hidden">
           <div class="section-header">
             <h2>Short Drama Storyboard Builder</h2>
-            <span class="meta-badge">Multi-Shot</span>
+            <span class="meta-badge">Multi-Shot Arc</span>
           </div>
           <div class="form-row">
             <label for="drama-premise">Story Premise / Scene Beat</label>
@@ -390,6 +417,10 @@
           <div class="controls-grid">
             <div class="control-item"><label for="drama-cast">Cast / @Characters</label><input id="drama-cast" type="text" class="compact-input" placeholder="@aria_noir, @kenji" /></div>
             <div class="control-item">
+              <label for="select-drama-arc">Story Arc</label>
+              <select id="select-drama-arc"></select>
+            </div>
+            <div class="control-item" style="grid-column:1/-1;">
               <label for="select-drama-shots">Shot Count</label>
               <select id="select-drama-shots">
                 <option value="3">3 Shots + Keyframe</option>
@@ -533,6 +564,7 @@
       <div class="drawer-header">
         <h3>Storyboard Shot List</h3>
         <div class="drawer-actions">
+          <button id="btn-export-storyboard-json" class="text-btn" type="button">Export JSON</button>
           <button id="btn-copy-storyboard" class="text-btn accent-link" type="button">Copy Script</button>
           <button id="btn-clear-storyboard" class="text-btn danger" type="button">Clear</button>
           <button id="btn-close-storyboard" class="icon-btn" type="button">✕</button>
@@ -550,14 +582,76 @@
         </div>
       </div>
       <div class="drawer-body">
-        <canvas id="edit-canvas" width="640" height="360" class="edit-canvas"></canvas>
+        <canvas id="edit-canvas" width="1280" height="720" class="edit-canvas"></canvas>
+        <div class="edit-nle-options">
+          <select id="select-edit-aspect" class="hf-chip-select" title="Export Canvas Aspect Ratio">
+            <option value="16:9" selected>16:9 HD (1280×720)</option>
+            <option value="9:16">9:16 Vertical (720×1280)</option>
+            <option value="1:1">1:1 Square (1080×1080)</option>
+            <option value="2.39:1">2.39:1 Scope (1280×536)</option>
+          </select>
+          <select id="select-edit-fit" class="hf-chip-select" title="Clip Aspect Fit">
+            <option value="cover" selected>Crop Cover</option>
+            <option value="contain">Letterbox Contain</option>
+          </select>
+          <label class="toggle-chip" title="0.35s Crossfade between clips">
+            <input type="checkbox" id="chk-edit-crossfade" checked />
+            <span>Crossfade</span>
+          </label>
+        </div>
         <div class="edit-toolbar">
           <label for="input-edit-clips" class="btn-secondary compact-btn file-label">+ Add Clips</label>
           <input id="input-edit-clips" type="file" accept="video/*,image/*" multiple class="hidden" />
-          <button id="btn-play-edit" class="btn-secondary compact-btn" type="button">Play Edit</button>
+          <button id="btn-play-edit" class="btn-secondary compact-btn" type="button">▶ Preview Edit</button>
           <button id="btn-export-edit" class="btn-primary compact-btn" type="button">Export .webm</button>
         </div>
         <div id="edit-clip-list" class="edit-clip-list"></div>
+      </div>
+    </aside>
+
+    <!-- Closed-Loop Grab Output Drawer -->
+    <aside id="grab-drawer" class="drawer hidden" aria-label="Grab Generated Output">
+      <div class="drawer-header">
+        <h3>Grabbed Outputs (Flow / Gemini)</h3>
+        <div class="drawer-actions">
+          <button id="btn-refresh-grab" class="text-btn accent-link" type="button">Rescan</button>
+          <button id="btn-close-grab" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+      <div id="grab-list" class="history-list"></div>
+    </aside>
+
+    <!-- Soul Vault Persistent Character & Look Repository -->
+    <aside id="soul-vault-drawer" class="drawer hidden" aria-label="Soul Vault Characters">
+      <div class="drawer-header">
+        <h3>Soul Vault <span id="soul-vault-count" class="meta-badge">0 souls</span></h3>
+        <div class="drawer-actions">
+          <button id="btn-close-souls" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+      <div class="drawer-body">
+        <form id="soul-vault-form" class="custom-form">
+          <div class="controls-grid">
+            <div class="form-row"><label for="sv-name">Display Name *</label><input id="sv-name" type="text" class="compact-input" placeholder="e.g., Kai Noir" required /></div>
+            <div class="form-row"><label for="sv-handle">@Handle *</label><input id="sv-handle" type="text" class="compact-input" placeholder="@kai_noir" /></div>
+          </div>
+          <div class="form-row"><label for="sv-dna">Character / Style DNA Prompt</label><textarea id="sv-dna" rows="2" placeholder="Short brown wolfcut hair, sharp jawline, charcoal wool trench coat..."></textarea></div>
+          <div class="controls-grid">
+            <div class="form-row"><label for="sv-lens">Default Lens</label><select id="sv-lens"></select></div>
+            <div class="form-row"><label for="sv-palette">Default Palette</label><select id="sv-palette"></select></div>
+          </div>
+          <div class="form-row">
+            <label>Reference Frames (up to 4 WebP-compressed refs)</label>
+            <div class="inline-row">
+              <label for="sv-input-refs" class="btn-secondary compact-btn file-label">+ Upload Refs</label>
+              <input id="sv-input-refs" type="file" accept="image/*" multiple class="hidden" />
+              <button id="sv-use-current-ref" class="text-btn accent-link" type="button">+ Use Current Ref</button>
+            </div>
+            <div id="sv-staged-refs" class="sv-ref-strip"></div>
+          </div>
+          <button type="submit" class="hf-generate-btn compact-full">Save Character to Soul Vault</button>
+        </form>
+        <div id="soul-vault-list" class="history-list"></div>
       </div>
     </aside>
 

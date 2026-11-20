@@ -1,8 +1,9 @@
-// HiggsFold Studio v2.0 — Content Script Bridge
+// HiggsFold Studio v4.0 — Content Script Bridge
 // Grounded in live REA DOM inspection of flow.google.com, gemini.google.com, and aistudio.google.com:
-//  - flow.google.com: Angular Material + ProseMirror (`div.ProseMirror[contenteditable="true"]`, `button.generate-icon-button[aria-label="Start generation"]`, `button.settings-trigger-button`)
-//  - gemini.google.com: Angular + Quill (`rich-textarea div.ql-editor[contenteditable="true"]`, dynamic `button[aria-label="Send message"]`)
-//  - Smart Visual DOM Picker (`Bind UI`) with element-level target normalization
+//  - Shadow DOM recursive piercing (querySelectorAllDeep)
+//  - flow.google.com: ProseMirror + Angular Material (`Image`/`Video`, `Frames`/`Ingredients`, AR, Batch, Model family)
+//  - gemini.google.com: Quill rich-textarea + Send button + Generated media Grab Output
+//  - Single-path waterfall image injection, ZWS-safe text injection & Smart Visual DOM Picker (`Bind UI`)
 
 (() => {
   if (window.__HIGGSFOLD_BRIDGE_LOADED__) return;
@@ -80,6 +81,33 @@
     return "generic";
   }
 
+  /**
+   * Recursively traverse light DOM and any open ShadowRoot descendants.
+   */
+  function querySelectorAllDeep(selector, root = document) {
+    const found = new Set();
+    const walk = (node) => {
+      if (!node || typeof node.querySelectorAll !== "function") return;
+      try {
+        const direct = node.querySelectorAll(selector);
+        for (const el of direct) found.add(el);
+      } catch (_) {}
+      let descendants = [];
+      try {
+        descendants = node.querySelectorAll("*");
+      } catch (_) {
+        descendants = [];
+      }
+      for (const el of descendants) {
+        if (el && el.shadowRoot) {
+          walk(el.shadowRoot);
+        }
+      }
+    };
+    walk(root);
+    return Array.from(found);
+  }
+
   function isVisible(node) {
     if (!node || !node.isConnected) return false;
     const rect = node.getBoundingClientRect();
@@ -103,7 +131,7 @@
   function findFirstVisible(selectors, requireEnabled = false) {
     for (const sel of selectors) {
       try {
-        const nodes = document.querySelectorAll(sel);
+        const nodes = querySelectorAllDeep(sel);
         for (const n of nodes) {
           if (isVisible(n) && (!requireEnabled || isInteractiveEnabled(n))) {
             return n;
@@ -122,6 +150,14 @@
       await new Promise((r) => setTimeout(r, 90));
     }
     return null;
+  }
+
+  // Strip Zero-Width Space / Joiner / BOM characters used by rich-text editors
+  function normalizeEditorText(s) {
+    return (s || "")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   // Framework-safe value injection (ProseMirror, Quill, React, Angular, Lit)
@@ -167,9 +203,8 @@
         inserted = false;
       }
 
-      const normalize = (s) => (s || "").replace(/\s+/g, " ").trim();
-      const normalizedTarget = normalize(text);
-      const currentNorm = () => normalize(el.innerText || el.textContent);
+      const normalizedTarget = normalizeEditorText(text);
+      const currentNorm = () => normalizeEditorText(el.innerText || el.textContent);
 
       // 2. Fallback: Clipboard paste event if execCommand did not stick
       if (!inserted || currentNorm() !== normalizedTarget) {
@@ -185,6 +220,19 @@
             clipboardData: dt
           });
           el.dispatchEvent(pasteEvt);
+        } catch (_) {}
+      }
+
+      // 2b. Fallback: Modern InputEvent("beforeinput") for Slate/Lexical/ProseMirror listeners
+      if (currentNorm() !== normalizedTarget) {
+        try {
+          const beforeEvt = new InputEvent("beforeinput", {
+            bubbles: true,
+            cancelable: true,
+            inputType: "insertText",
+            data: text
+          });
+          el.dispatchEvent(beforeEvt);
         } catch (_) {}
       }
 
@@ -224,8 +272,6 @@
         'textarea, input, div.ProseMirror, div.ql-editor, [contenteditable="true"], [role="textbox"]'
       );
       if (direct) return direct;
-      // If user clicks a compact prompt card wrapper (e.g. flow-rich-text-editor or div.base-prompt-box),
-      // resolve the inner editable element inside it instead of binding the wrapper.
       const rect = target.getBoundingClientRect();
       if (rect.height > 0 && rect.height < window.innerHeight * 0.55) {
         const inner = target.querySelector(
@@ -298,7 +344,7 @@
     return (clone.textContent || "").replace(/\s+/g, " ").trim();
   }
 
-  // Google Flow Settings Auto-Sync (Mode, Aspect Ratio, Batch, Model)
+  // Google Flow Settings Auto-Sync (Mode, Sub-Mode Frames/Ingredients, Aspect Ratio, Batch, Model Priority)
   async function syncGoogleFlowSettings(settings) {
     const host = window.location.hostname;
     const trigger = findFirstVisible([
@@ -310,7 +356,7 @@
     }
 
     const findSettingsOverlay = () =>
-      Array.from(document.querySelectorAll(".cdk-overlay-pane:not(.hidden)")).find((p) =>
+      querySelectorAllDeep(".cdk-overlay-pane:not(.hidden)").find((p) =>
         p.querySelector('[role="radio"], .mat-button-toggle-button')
       );
 
@@ -326,30 +372,55 @@
     }
 
     const synced = [];
-    const clickMatchingRadio = (targetText) => {
-      const targetLower = targetText.toLowerCase();
+    const clickMatchingRadio = (candidates) => {
+      const list = Array.isArray(candidates) ? candidates : [candidates];
       const radios = Array.from(overlay.querySelectorAll('[role="radio"], .mat-button-toggle-button'));
-      const exact = radios.find((el) => getCleanToggleText(el).toLowerCase() === targetLower);
-      const match =
-        exact ||
-        radios.find((el) => getCleanToggleText(el).toLowerCase().includes(targetLower));
-      if (match) {
-        if (match.getAttribute("aria-checked") !== "true") {
-          match.click();
+      for (const candidate of list) {
+        if (!candidate) continue;
+        const targetLower = candidate.toLowerCase();
+        const exact = radios.find((el) => getCleanToggleText(el).toLowerCase() === targetLower);
+        const match =
+          exact ||
+          radios.find((el) => getCleanToggleText(el).toLowerCase().includes(targetLower));
+        if (match) {
+          if (match.getAttribute("aria-checked") !== "true") {
+            match.click();
+          }
+          return getCleanToggleText(match) || candidate;
         }
-        return true;
       }
-      return false;
+      return null;
     };
 
-    if (settings.mode && clickMatchingRadio(settings.mode)) {
-      synced.push(`Mode:${settings.mode}`);
-      await new Promise((r) => setTimeout(r, 150));
+    if (settings.mode) {
+      const matchedMode = clickMatchingRadio(settings.mode);
+      if (matchedMode) {
+        synced.push(`Mode:${matchedMode}`);
+        await new Promise((r) => setTimeout(r, 150));
+      }
     }
 
-    if (settings.aspectRatio && settings.aspectRatio !== "2.39:1") {
-      if (clickMatchingRadio(settings.aspectRatio)) {
-        synced.push(`AR:${settings.aspectRatio}`);
+    if (settings.mode === "Video" && settings.videoSubMode) {
+      const subCandidates =
+        settings.videoSubMode.toLowerCase().includes("ingredient")
+          ? ["Ingredients", "Ingredients to Video"]
+          : ["Frames", "Frames to Video"];
+      const matchedSub = clickMatchingRadio(subCandidates);
+      if (matchedSub) {
+        synced.push(`SubMode:${matchedSub}`);
+        await new Promise((r) => setTimeout(r, 120));
+      }
+    }
+
+    if (settings.aspectRatio) {
+      const mappedRatio = settings.aspectRatio === "2.39:1" ? "16:9" : settings.aspectRatio;
+      const matchedRatio = clickMatchingRadio(mappedRatio);
+      if (matchedRatio) {
+        synced.push(
+          settings.aspectRatio === "2.39:1"
+            ? `AR:${matchedRatio}(from 2.39:1)`
+            : `AR:${matchedRatio}`
+        );
       }
     }
 
@@ -360,22 +431,35 @@
       }
     }
 
-    // Optional Model selection inside popover menu
-    if (settings.modelHint) {
+    // Priority model selection inside popover menu
+    const modelPriority = Array.isArray(settings.modelHints) && settings.modelHints.length > 0
+      ? settings.modelHints
+      : settings.modelHint
+        ? [settings.modelHint]
+        : [];
+
+    if (modelPriority.length > 0) {
       const modelBtn = overlay.querySelector('button[aria-label="Select model family"]');
       const currentModelText = modelBtn ? getCleanToggleText(modelBtn).toLowerCase() : "";
-      if (modelBtn && !currentModelText.includes(settings.modelHint.toLowerCase())) {
+      const primaryHint = modelPriority[0].toLowerCase();
+      if (modelBtn && !currentModelText.includes(primaryHint)) {
         modelBtn.click();
         await new Promise((r) => setTimeout(r, 180));
-        const menuItems = Array.from(
-          document.querySelectorAll('.cdk-overlay-pane [role="menuitem"], .cdk-overlay-pane button.mat-mdc-menu-item')
+        const menuItems = querySelectorAllDeep(
+          '.cdk-overlay-pane [role="menuitem"], .cdk-overlay-pane button.mat-mdc-menu-item'
         );
-        const targetItem = menuItems.find((m) =>
-          (m.textContent || "").toLowerCase().includes(settings.modelHint.toLowerCase())
-        );
-        if (targetItem) {
-          targetItem.click();
-          synced.push(`Model:${settings.modelHint}`);
+        let matchedItem = null;
+        for (const hint of modelPriority) {
+          const hintLower = hint.toLowerCase();
+          matchedItem =
+            menuItems.find((m) => getCleanToggleText(m).toLowerCase() === hintLower) ||
+            menuItems.find((m) => (m.textContent || "").toLowerCase().includes(hintLower));
+          if (matchedItem) break;
+        }
+        if (matchedItem) {
+          const chosenLabel = getCleanToggleText(matchedItem) || (matchedItem.textContent || "").trim();
+          matchedItem.click();
+          synced.push(`Model:${chosenLabel}`);
           await new Promise((r) => setTimeout(r, 120));
         }
       }
@@ -394,6 +478,85 @@
     }
 
     return { ok: true, synced };
+  }
+
+  async function blobUrlToDataUrl(blobUrl) {
+    const res = await fetch(blobUrl);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ dataUrl: reader.result, mimeType: blob.type || "image/png" });
+      reader.onerror = () => reject(new Error("Failed to read blob data URL"));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function grabLatestVisibleMedia() {
+    const mediaNodes = querySelectorAllDeep("img, video");
+    const seenSrc = new Set();
+    const items = [];
+
+    for (let idx = 0; idx < mediaNodes.length; idx += 1) {
+      const el = mediaNodes[idx];
+      if (!isVisible(el)) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 256 || rect.height < 256) continue;
+
+      const isVideo = el.tagName === "VIDEO";
+      const rawSrc = isVideo ? el.currentSrc || el.src || el.poster : el.currentSrc || el.src;
+      if (!rawSrc || rawSrc.startsWith("chrome-extension:") || rawSrc.startsWith("data:image/svg")) {
+        continue;
+      }
+      if (seenSrc.has(rawSrc)) continue;
+      seenSrc.add(rawSrc);
+
+      let dataUrl = null;
+      let mimeType = isVideo ? "video/mp4" : "image/png";
+      if (rawSrc.startsWith("data:")) {
+        dataUrl = rawSrc;
+      } else if (rawSrc.startsWith("blob:") && !isVideo) {
+        try {
+          const conv = await blobUrlToDataUrl(rawSrc);
+          dataUrl = conv.dataUrl;
+          mimeType = conv.mimeType;
+        } catch (_) {}
+      } else if (isVideo && el.poster && el.poster.startsWith("blob:")) {
+        try {
+          const conv = await blobUrlToDataUrl(el.poster);
+          dataUrl = conv.dataUrl;
+          mimeType = conv.mimeType;
+        } catch (_) {}
+      }
+
+      items.push({
+        kind: isVideo ? "video" : "image",
+        src: rawSrc,
+        poster: el.poster || "",
+        dataUrl,
+        mimeType,
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        area: Math.round(rect.width * rect.height),
+        alt: (el.getAttribute("alt") || "").trim(),
+        domOrder: idx
+      });
+    }
+
+    // Prefer largest high-res generated outputs first, newest DOM order as tie-breaker
+    items.sort((a, b) => {
+      const areaDiff = b.area - a.area;
+      if (Math.abs(areaDiff) > 50000) return areaDiff;
+      return b.domOrder - a.domOrder;
+    });
+
+    const trimmed = items.slice(0, 8).map(({ domOrder, area, ...rest }) => rest);
+    if (trimmed.length === 0) {
+      return {
+        ok: false,
+        error: "No generated output >= 256px found on the current page. Generate or preview an image/video first."
+      };
+    }
+    return { ok: true, items: trimmed };
   }
 
   // Interactive Visual DOM Picker + On-Canvas HUD
@@ -561,6 +724,13 @@
       return true;
     }
 
+    if (message.type === "HIGGSFOLD_GRAB_LATEST_MEDIA") {
+      grabLatestVisibleMedia()
+        .then((res) => sendResponse(res))
+        .catch((err) => sendResponse({ ok: false, error: err?.message || "Grab failed" }));
+      return true;
+    }
+
     if (message.type === "HIGGSFOLD_INJECT_IMAGE") {
       (async () => {
         const { dataUrl, fileName, mimeType } = message.payload || {};
@@ -571,31 +741,76 @@
         const host = window.location.hostname;
         const siteKey = getSiteKey(host);
         const profile = SITE_PROFILES[siteKey] || SITE_PROFILES.generic;
-        const inputEl = findFirstVisible([...profile.input, ...SITE_PROFILES.generic.input], false);
-        if (!inputEl) {
-          sendResponse({ ok: false, error: "Target editor not found for image paste/drop." });
+        const { customSelectors = {} } = await chrome.storage.local.get("customSelectors");
+        const saved = customSelectors[host];
+        const inputSelectors = saved?.input
+          ? [saved.input, ...profile.input, ...SITE_PROFILES.generic.input]
+          : [...profile.input, ...SITE_PROFILES.generic.input];
+
+        const inputEl = findFirstVisible(inputSelectors, false);
+        const fileInput = querySelectorAllDeep('input[type="file"][accept*="image"], input[type="file"]').find(
+          (n) => !n.disabled
+        );
+        if (!inputEl && !fileInput) {
+          sendResponse({ ok: false, error: "Target editor or file input not found for image attachment." });
           return;
         }
+
         try {
           const res = await fetch(dataUrl);
           const blob = await res.blob();
-          const file = new File([blob], fileName || "reference.png", { type: mimeType || blob.type || "image/png" });
+          const file = new File([blob], fileName || "reference.png", {
+            type: mimeType || blob.type || "image/png"
+          });
           const dt = new DataTransfer();
           dt.items.add(file);
-          inputEl.focus();
-          const pasteEvt = new ClipboardEvent("paste", {
-            bubbles: true,
-            cancelable: true,
-            clipboardData: dt
-          });
-          inputEl.dispatchEvent(pasteEvt);
+
+          // Single-Path Waterfall:
+          // 1) Try native Clipboard Paste into prompt editor if present
+          if (inputEl) {
+            const beforeThumbs = querySelectorAllDeep('img[src^="blob:"], img[src^="data:"]').length;
+            inputEl.focus();
+            const pasteEvt = new ClipboardEvent("paste", {
+              bubbles: true,
+              cancelable: true,
+              clipboardData: dt
+            });
+            const notCancelled = inputEl.dispatchEvent(pasteEvt);
+            await new Promise((r) => setTimeout(r, 120));
+            const afterThumbs = querySelectorAllDeep('img[src^="blob:"], img[src^="data:"]').length;
+
+            if (!notCancelled || pasteEvt.defaultPrevented || afterThumbs > beforeThumbs) {
+              sendResponse({ ok: true, site: siteKey, method: "paste" });
+              return;
+            }
+          }
+
+          // 2) Fallback: native hidden/visible file input upload
+          if (fileInput) {
+            try {
+              Object.defineProperty(fileInput, "files", {
+                configurable: true,
+                get: () => dt.files
+              });
+            } catch (_) {
+              try {
+                fileInput.files = dt.files;
+              } catch (_) {}
+            }
+            fileInput.dispatchEvent(new Event("input", { bubbles: true }));
+            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+            sendResponse({ ok: true, site: siteKey, method: "file-input" });
+            return;
+          }
+
+          // 3) Final fallback: single Drag & Drop event on prompt editor
           const dropEvt = new DragEvent("drop", {
             bubbles: true,
             cancelable: true,
             dataTransfer: dt
           });
           inputEl.dispatchEvent(dropEvt);
-          sendResponse({ ok: true, site: siteKey });
+          sendResponse({ ok: true, site: siteKey, method: "drop" });
         } catch (err) {
           sendResponse({ ok: false, error: err?.message || "Image bridge failed." });
         }
