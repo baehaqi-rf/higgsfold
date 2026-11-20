@@ -6,8 +6,14 @@
 //  - Single-path waterfall image injection, ZWS-safe text injection & Smart Visual DOM Picker (`Bind UI`)
 
 (() => {
-  if (window.__HIGGSFOLD_BRIDGE_LOADED__) return;
-  window.__HIGGSFOLD_BRIDGE_LOADED__ = true;
+  const BRIDGE_VERSION = 403;
+  if (window.__HIGGSFOLD_BRIDGE_VERSION__ === BRIDGE_VERSION) return;
+  if (window.__HIGGSFOLD_BRIDGE_LISTENER__) {
+    try {
+      chrome.runtime.onMessage.removeListener(window.__HIGGSFOLD_BRIDGE_LISTENER__);
+    } catch (_) {}
+  }
+  window.__HIGGSFOLD_BRIDGE_VERSION__ = BRIDGE_VERSION;
 
   const SITE_PROFILES = {
     flow: {
@@ -29,12 +35,17 @@
       input: [
         'rich-textarea div.ql-editor[contenteditable="true"][role="textbox"]',
         'div[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
+        'div[aria-label*="Ask Gemini" i][contenteditable="true"]',
+        'div[data-placeholder*="Ask Gemini" i][contenteditable="true"]',
+        'rich-textarea div[contenteditable="true"]',
         'rich-textarea [contenteditable="true"]',
         'div[contenteditable="true"][role="textbox"]'
       ],
       submit: [
         'button[aria-label="Send message"]',
-        'button[aria-label*="Send" i]'
+        'button[aria-label*="Send" i]',
+        'button[mattooltip*="Send" i]',
+        'button.send-button'
       ]
     },
     aistudio: {
@@ -695,7 +706,7 @@
   }
 
   // Message Listener from Side Panel
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  const onMessageHandler = (message, _sender, sendResponse) => {
     if (message.type === "HIGGSFOLD_PING") {
       sendResponse({
         ok: true,
@@ -820,73 +831,77 @@
 
     if (message.type === "HIGGSFOLD_GEMINI_ENHANCE") {
       (async () => {
-        const { metaPrompt, timeoutMs = 45000 } = message.payload || {};
-        if (!metaPrompt) {
-          sendResponse({ ok: false, error: "Meta-prompt is empty." });
-          return;
-        }
-        const host = window.location.hostname;
-        const inputEl = findFirstVisible(SITE_PROFILES.gemini.input, false);
-        if (getSiteKey(host) !== "gemini" && !inputEl) {
-          sendResponse({ ok: false, error: "Open gemini.google.com tab (with Hydrogen/Neon/Pro selected) first." });
-          return;
-        }
-        if (!inputEl) {
-          sendResponse({ ok: false, error: "Gemini prompt box not found on page." });
-          return;
-        }
-
-        const respSelector =
-          'model-response message-content, message-content, .model-response-text, [data-message-author-role="model"]';
-        const readResponses = () => querySelectorAllDeep(respSelector);
-        const beforeNodes = readResponses();
-        const beforeCount = beforeNodes.length;
-        const beforeLastText =
-          beforeCount > 0
-            ? (beforeNodes[beforeCount - 1].innerText || beforeNodes[beforeCount - 1].textContent || "").trim()
-            : "";
-
-        writeValueToElement(inputEl, metaPrompt);
-        const sendBtn = await waitForEnabledSubmit(SITE_PROFILES.gemini.submit, 1200);
-        if (!sendBtn) {
-          sendResponse({ ok: false, error: "Gemini Send button did not become active." });
-          return;
-        }
-        sendBtn.click();
-
-        const start = Date.now();
-        let lastObserved = "";
-        let stableTicks = 0;
-
-        while (Date.now() - start <= timeoutMs) {
-          await new Promise((r) => setTimeout(r, 220));
-          const nowNodes = readResponses();
-          const nowLast =
-            nowNodes.length > 0
-              ? (nowNodes[nowNodes.length - 1].innerText || nowNodes[nowNodes.length - 1].textContent || "").trim()
-              : "";
-          const hasNewReply =
-            Boolean(nowLast) &&
-            (nowNodes.length > beforeCount || nowLast !== beforeLastText);
-          if (!hasNewReply) continue;
-
-          const stopBtn = findFirstVisible(['button[aria-label*="Stop" i]'], false);
-          if (nowLast === lastObserved && !stopBtn) {
-            stableTicks += 1;
-            if (stableTicks >= 2) {
-              sendResponse({ ok: true, enhancedText: nowLast });
-              return;
-            }
-          } else {
-            lastObserved = nowLast;
-            stableTicks = 0;
+        try {
+          const { metaPrompt, timeoutMs = 45000 } = message.payload || {};
+          if (!metaPrompt) {
+            sendResponse({ ok: false, error: "Meta-prompt is empty." });
+            return;
           }
-        }
+          const host = window.location.hostname;
+          const inputEl = findFirstVisible(SITE_PROFILES.gemini.input, false);
+          if (getSiteKey(host) !== "gemini" && !inputEl) {
+            sendResponse({ ok: false, error: "Open gemini.google.com tab (with Hydrogen/Neon/Pro selected) first." });
+            return;
+          }
+          if (!inputEl) {
+            sendResponse({ ok: false, error: "Gemini prompt box not found on page." });
+            return;
+          }
 
-        if (lastObserved) {
-          sendResponse({ ok: true, enhancedText: lastObserved });
-        } else {
-          sendResponse({ ok: false, error: "Timed out waiting for Gemini response." });
+          const respSelector =
+            'model-response message-content, message-content, .model-response-text, [data-message-author-role="model"]';
+          const readResponses = () => querySelectorAllDeep(respSelector);
+          const beforeNodes = readResponses();
+          const beforeCount = beforeNodes.length;
+          const beforeLastText =
+            beforeCount > 0
+              ? (beforeNodes[beforeCount - 1].innerText || beforeNodes[beforeCount - 1].textContent || "").trim()
+              : "";
+
+          writeValueToElement(inputEl, metaPrompt);
+          const sendBtn = await waitForEnabledSubmit(SITE_PROFILES.gemini.submit, 1500);
+          if (!sendBtn) {
+            sendResponse({ ok: false, error: "Gemini Send button did not become active." });
+            return;
+          }
+          sendBtn.click();
+
+          const start = Date.now();
+          let lastObserved = "";
+          let stableTicks = 0;
+
+          while (Date.now() - start <= timeoutMs) {
+            await new Promise((r) => setTimeout(r, 220));
+            const nowNodes = readResponses();
+            const nowLast =
+              nowNodes.length > 0
+                ? (nowNodes[nowNodes.length - 1].innerText || nowNodes[nowNodes.length - 1].textContent || "").trim()
+                : "";
+            const hasNewReply =
+              Boolean(nowLast) &&
+              (nowNodes.length > beforeCount || nowLast !== beforeLastText);
+            if (!hasNewReply) continue;
+
+            const stopBtn = findFirstVisible(['button[aria-label*="Stop" i]'], false);
+            if (nowLast === lastObserved && !stopBtn) {
+              stableTicks += 1;
+              if (stableTicks >= 2) {
+                sendResponse({ ok: true, enhancedText: nowLast });
+                return;
+              }
+            } else {
+              lastObserved = nowLast;
+              stableTicks = 0;
+            }
+          }
+
+          if (lastObserved) {
+            sendResponse({ ok: true, enhancedText: lastObserved });
+          } else {
+            sendResponse({ ok: false, error: "Timed out waiting for Gemini response." });
+          }
+        } catch (err) {
+          sendResponse({ ok: false, error: err?.message || String(err) });
         }
       })();
       return true;
@@ -936,5 +951,7 @@
       })();
       return true;
     }
-  });
+  };
+  window.__HIGGSFOLD_BRIDGE_LISTENER__ = onMessageHandler;
+  chrome.runtime.onMessage.addListener(onMessageHandler);
 })();

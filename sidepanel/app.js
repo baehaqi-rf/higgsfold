@@ -1057,14 +1057,14 @@ async function checkActiveTab() {
 
 async function sendMessageWithAutoBridge(tabId, message) {
   try {
-    return await chrome.tabs.sendMessage(tabId, message);
-  } catch (_) {
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ["content/bridge.js"]
-    });
-    return await chrome.tabs.sendMessage(tabId, message);
-  }
+    const res = await chrome.tabs.sendMessage(tabId, message);
+    if (res !== undefined) return res;
+  } catch (_) {}
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["content/bridge.js"]
+  });
+  return await chrome.tabs.sendMessage(tabId, message);
 }
 
 async function fetchMediaDataUrlFromItem(item) {
