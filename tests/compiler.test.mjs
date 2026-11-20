@@ -18,7 +18,6 @@ import {
   buildGeminiDirectorMetaPrompt,
   cleanGeminiEnhancedOutput
 } from "../sidepanel/compiler.js";
-import { getPresetPosterUrl } from "../sidepanel/preset-visuals.js";
 
 test("preset catalog includes 110+ Stage 1 looks, 47 Stage 2 camera+Kinetic VFX moves, and zero brand leakage", () => {
   assert.ok(STAGE1_PRESETS.length >= 110, `Expected >= 110 Stage 1 presets, got ${STAGE1_PRESETS.length}`);
@@ -272,13 +271,11 @@ test("buildGeminiDirectorMetaPrompt & cleanGeminiEnhancedOutput preserve locks a
   assert.equal(cleanGeminiEnhancedOutput('"Quoted cinema prompt."'), "Quoted cinema prompt.");
 });
 
-test("Every Stage 1 (113) and Stage 2 (47) preset has rich poster artwork (no blank cards)", () => {
+test("Every Stage 1 (113) and Stage 2 (47) preset has a real HTTPS Higgsfield CDN poster", () => {
   for (const p of STAGE1_PRESETS) {
-    const url = getPresetPosterUrl(p, false);
-    assert.ok(url && (url.startsWith("data:image/svg+xml") || url.startsWith("http")), `Missing poster for S1 ${p.id}`);
+    assert.ok(p.poster && p.poster.startsWith("https://"), `Missing real poster for S1 ${p.id}`);
   }
   for (const p of STAGE2_PRESETS) {
-    const url = getPresetPosterUrl(p, true);
-    assert.ok(url && (url.startsWith("data:image/svg+xml") || url.startsWith("http")), `Missing poster for S2 ${p.id}`);
+    assert.ok(p.poster && p.poster.startsWith("https://"), `Missing real poster for S2 ${p.id}`);
   }
 });

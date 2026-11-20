@@ -980,10 +980,14 @@ export const MOTION_CONTROL_MODES = [
   { id: "image-bg", label: "Keep Character Scene", text: "Transfer strictly the subject's skeletal motion and camera rhythm while preserving the background and lighting of the target character image." }
 ];
 
-// Ground-truth Higgsfield CDN preview posters & hover videos (from Cinema Studio 4.0 extraction)
+// Ground-truth Higgsfield CDN preview posters & hover videos (from REA live extraction)
 const imgProxy = (url) => `https://images.higgs.ai/?default=1&output=webp&url=${encodeURIComponent(url)}&w=384&q=85`;
 const cs4Ctrl = (file) => `https://cdn.higgsfield.ai/cinema_studio_40_creative_controls/${file}`;
 const cs4Color = (file) => `https://higgsfield.ai/cdn-cgi/image/fit=scale-down,format=webp,onerror=redirect,width=1920,quality=85/https://cdn.higgsfield.ai/cinema_studio_40_color_presets/${file}`;
+const soulImg = (file) => imgProxy(`https://cdn.higgsfield.ai/soul-style/${file}`);
+const staticImg = (file) => imgProxy(`https://static.higgsfield.ai/${file}`);
+const staticVid = (file) => `https://static.higgsfield.ai/${file}`;
+const viralImg = (file) => imgProxy(`https://cdn.higgsfield.ai/${file}`);
 
 const MOVEMENT_MEDIA = {
   "snorricam-chest": { poster: imgProxy(cs4Ctrl("f74144c0-afc3-4d7e-b07b-76b16b6cd187.webp")), videoSrc: cs4Ctrl("41f533bc-e56a-4807-9966-1b7f487a6fa4.mp4") },
@@ -1018,7 +1022,138 @@ const MOVEMENT_MEDIA = {
   "slider-right": { poster: imgProxy(cs4Ctrl("3c2bc6c0-b1dd-48b0-831e-c2a7ca1838e8.webp")), videoSrc: cs4Ctrl("47b73a55-9dc7-4826-b7ea-71d33c3793a3.mp4") },
   "crash-zoom-in": { poster: imgProxy(cs4Ctrl("2fc0b86d-a755-48e7-aa33-b7080fa6a36c.webp")), videoSrc: cs4Ctrl("7e76d6a7-7360-4254-8c0c-7afbec20248a.mp4") },
   "slider-left": { poster: imgProxy(cs4Ctrl("db4ff5ec-8386-46d5-b907-1d9eb0cc59df.webp")), videoSrc: cs4Ctrl("809b7c81-8ce9-4d6c-b042-dcb46cfb0e9b.mp4") },
-  "helicopter-shot": { poster: imgProxy(cs4Ctrl("9f351ee9-54e8-4b4a-b104-1bbd7f8db714.webp")), videoSrc: cs4Ctrl("c5f97f2c-f96b-479c-a2ff-ae37e7d79b07.mp4") }
+  "helicopter-shot": { poster: imgProxy(cs4Ctrl("9f351ee9-54e8-4b4a-b104-1bbd7f8db714.webp")), videoSrc: cs4Ctrl("c5f97f2c-f96b-479c-a2ff-ae37e7d79b07.mp4") },
+  "fpv-drone-dive": { poster: staticImg("5eb82f94-2b98-4e4a-ab4b-ee6c872fb2c7.webp"), videoSrc: staticVid("5eb82f94-2b98-4e4a-ab4b-ee6c872fb2c7.mp4") },
+  "low-angle-tracking": { poster: staticImg("a0a7c624-cf2a-4204-a9f8-60623d4a7383.webp"), videoSrc: staticVid("a0a7c624-cf2a-4204-a9f8-60623d4a7383.mp4") },
+  // 12 Kinetic VFX Real Higgsfield Video Effects Posters & Preview Videos
+  "liquid-metal-morph": { poster: staticImg("46e23a6b-1047-40f1-9cf5-33f5f55ddf2e.webp"), videoSrc: staticVid("46e23a6b-1047-40f1-9cf5-33f5f55ddf2e.mp4") },
+  "shatter-reassemble": { poster: staticImg("9680aaf0-c5db-4204-833f-56f825bb350b.webp"), videoSrc: staticVid("9680aaf0-c5db-4204-833f-56f825bb350b.mp4") },
+  "match-cut-object-swap": { poster: staticImg("a8e2bc3a-e78e-42aa-a0e6-79bc01141ed3.webp"), videoSrc: staticVid("a8e2bc3a-e78e-42aa-a0e6-79bc01141ed3.mp4") },
+  "kinetic-elastic-pop": { poster: viralImg("viral_hub/151664fa-7f7f-43d6-80fa-4683104a3c02.webp"), videoSrc: staticVid("dbf3fbc1-f69c-4904-a063-104cf2998a40.mp4") },
+  "magnetic-snap-assembly": { poster: viralImg("viral_hub/b703fc00-16e8-4036-acc2-6519ab82bf03.webp"), videoSrc: staticVid("6f06f47e-922e-4660-9fe9-754e4be69696.mp4") },
+  "particle-dust-dissolve": { poster: staticImg("4e981984-1cdc-4b96-a2b1-1a7c1ecb822d.webp"), videoSrc: staticVid("4e981984-1cdc-4b96-a2b1-1a7c1ecb822d.mp4") },
+  "origami-unfold-reveal": { poster: viralImg("viral_hub/b5c90864-c3c5-4b14-87a0-3739250fd00b.webp"), videoSrc: staticVid("b25600ef-238e-448a-bb07-1ff74fd0207f.mp4") },
+  "data-glitch-swap": { poster: viralImg("viral_hub/495d9e85-0417-47d9-9e0a-722ace805852.webp"), videoSrc: staticVid("007f9809-c63e-4f65-9976-3001cf699784.mp4") },
+  "gravity-drop-impact": { poster: staticImg("e974bca9-c9eb-4cc8-9318-5676cc110f17.webp"), videoSrc: staticVid("e974bca9-c9eb-4cc8-9318-5676cc110f17.mp4") },
+  "molten-glass-flow": { poster: staticImg("ed15397e-0a3d-49e3-add4-b9529698a8ad.webp"), videoSrc: staticVid("ed15397e-0a3d-49e3-add4-b9529698a8ad.mp4") },
+  "vortex-portal-warp": { poster: viralImg("viral_hub/0abb112e-068d-45e4-acea-9c8c44a16781.webp"), videoSrc: staticVid("30d58d76-3149-4dee-9ffa-920a7ca6eb9e.mp4") },
+  "kinetic-typography-punch": { poster: staticImg("6f06f47e-922e-4660-9fe9-754e4be69696.webp"), videoSrc: staticVid("6f06f47e-922e-4660-9fe9-754e4be69696.mp4") }
+};
+
+const SOUL_MEDIA = {
+  "soul-editorial-35mm": soulImg("671935ec-51a6-4f9d-9cb4-39661b9a9814.jpg"),
+  "neon-noir-anamorphic": viralImg("viral_hub_preset/216224e0-f1f7-4e51-8787-5040807cdc23.webp"),
+  "luxury-studio-product": soulImg("af2a00ab-3f9f-451b-8c0b-4abc81adb12a.webp"),
+  "raw-docu-handheld": soulImg("acf8f24d-f567-4b7a-bede-aa63cb7c90dd.jpg"),
+  "golden-hour-epic": soulImg("71d9f310-f966-41ec-a009-a87167bcbebe.webp"),
+  "high-fashion-flash": soulImg("47181b3d-429b-4f87-bb7c-2c5ca96da893.webp"),
+  "quiet-luxury": soulImg("af2a00ab-3f9f-451b-8c0b-4abc81adb12a.webp"),
+  "cyber-2049": cs4Color("5a3f634a-3a49-47b8-a3df-438f42b9ee5e.webp"),
+  "soul-general": soulImg("671935ec-51a6-4f9d-9cb4-39661b9a9814.jpg"),
+  "soul-iphone": soulImg("9627c330-e5e0-428d-8414-aeae83d57819.jpg"),
+  "soul-realistic": soulImg("acf8f24d-f567-4b7a-bede-aa63cb7c90dd.jpg"),
+  "soul-digitalcam": soulImg("0e82377e-e3dd-48a8-94fd-04a4ed038be4.webp"),
+  "soul-flight-mode": soulImg("91490e65-80c2-42a0-bbec-971392a77462.webp"),
+  "soul-sunset-beach": soulImg("71d9f310-f966-41ec-a009-a87167bcbebe.webp"),
+  "soul-mt-fuji": soulImg("7bc1844f-33b1-4578-b25c-2c8ab373e350.webp"),
+  "soul-street-view": soulImg("1c59f291-cf9d-45c1-92b0-53768f372d0e.webp"),
+  "soul-tokyo-streetstyle": soulImg("b8665543-a419-4fda-a8d0-b10f07b8c03d.jpg"),
+  "soul-bimbocore": soulImg("fb283ea7-2fdb-4b50-acd3-f38d83d2c93e.jpg"),
+  "soul-cctv": soulImg("ed84e65b-1c57-4ce2-bef0-8e98c9e6667f.webp"),
+  "soul-elevator-mirror": soulImg("0139a8e4-eb76-474a-a13c-d764d38674d1.jpg"),
+  "soul-y2k": soulImg("75e73009-dd0c-4b9d-b0ef-93544b7e4491.jpg"),
+  "soul-ringselfie": soulImg("d5d6f14d-9ba1-4f29-96d9-792280f50782.jpg"),
+  "soul-spotlight": soulImg("47181b3d-429b-4f87-bb7c-2c5ca96da893.webp"),
+  "soul-y2k-posters": soulImg("a8d0899d-ec67-49a4-af7f-5fcf0a8f27be.webp"),
+  "soul-nail-check": soulImg("dc1274f0-b58d-4603-9f01-97337e512cac.jpg"),
+  "soul-gorpcore": soulImg("fbbfa936-7e5e-44f4-ac9c-774b38967130.jpg"),
+  "soul-90s-grain": soulImg("a5c20546-38eb-4d61-8eb2-5290908d55bc.jpg"),
+  "soul-0-5-selfie": soulImg("add67dde-7dbf-4565-93e9-a9bb121e03b9.jpg"),
+  "soul-0-5-outfit": soulImg("d014f6a2-792e-429b-b47a-33352ed95e2d.jpg"),
+  "soul-medieval": soulImg("6d384dd7-f756-41de-9628-06c6cb204423.jpg"),
+  "soul-japandi": soulImg("c63129ae-e4db-4bdf-9617-f7201f4a4cd1.jpg"),
+  "soul-coquette-core": soulImg("9ce0b7cb-2252-4047-8c9a-291a90395e66.jpg"),
+  "soul-sand": soulImg("665ca5a4-e1e7-4fed-8d53-01177ae0518d.jpg"),
+  "soul-2000s-cam": soulImg("acc02fcd-ce68-4019-b517-089025455ed6.jpg"),
+  "soul-giant-accessory": soulImg("f66daa40-480f-49f1-90ed-6b2af23a4554.jpg"),
+  "soul-hairclips": soulImg("35a6bbaa-4332-4537-8fce-28012da558be.jpg"),
+  "soul-505room": soulImg("293ed3aa-0d8e-4073-839a-d1698eafdf85.jpg"),
+  "soul-eating-food": soulImg("d58fc1ab-f332-4e9b-bdd3-257164e92930.jpg"),
+  "soul-rainy-day": soulImg("dfa98f2e-9b22-4272-a030-a5296b3b9b6a.jpg"),
+  "soul-foggy-morning": soulImg("3cbfe1d2-421e-421a-b7bd-dbee471a1d65.jpg"),
+  "soul-avant-garde": soulImg("62cfc3fb-bb46-4977-9fbb-cee0b68504d4.jpg"),
+  "soul-tumblr": soulImg("8d797478-cc70-47e1-9a35-242852667eb0.jpg"),
+  "soul-through-the-glass": soulImg("c6ffc0df-5487-417b-82d9-2ec54d2aa122.jpg"),
+  "soul-vintage-photobooth": soulImg("e41faf36-e634-485d-be55-edcce8099043.jpg"),
+  "soul-fisheye": soulImg("cacbe40f-8551-481a-a8f3-57692fc4ba4d.webp"),
+  "soul-geominimal": soulImg("670dae78-6481-4aab-b986-5060b1ae43ed.webp"),
+  "soul-7": soulImg("ebdf01bb-e964-4d7e-9d75-f0735492a5aa.webp"),
+  "soul-selfcare": soulImg("6a5baf93-e0dc-4123-9f7b-868eab9b4e04.jpg"),
+  "soul-babydoll-makeup": soulImg("1d334a76-18b8-4d7e-9f77-1f3b5623d872.jpg"),
+  "soul-fairycore": soulImg("a9f12667-0dd4-452e-b704-4ac8f29a69d9.webp"),
+  "soul-office-beach": soulImg("71391c5d-1171-4b32-9c74-6e97413ab33c.jpg"),
+  "soul-swords-hill": soulImg("fe9aa7ca-01be-443f-be91-d55efb7691e7.jpg"),
+  "soul-amalfi-summer": soulImg("61d13bb8-fbe2-4816-8d2b-231e5ef68930.webp"),
+  "soul-creatures": soulImg("ce4416fd-37a7-42fe-af0d-10167d2cfa0a.webp"),
+  "soul-grunge": soulImg("dc742858-f56d-4fcc-9736-e7c2a3005b84.jpg"),
+  "soul-glazed-doll-skin-makeup": soulImg("3c0eb808-90bf-4c84-b6fa-caae44265ef3.jpg"),
+  "soul-invertethereal": soulImg("5a70012c-02c4-45aa-934b-768587a2d0e4.jpg"),
+  "soul-indie-sleaze": soulImg("3a5a91b6-330d-407e-8b55-c3900a95f0db.jpg"),
+  "soul-mixed-media": soulImg("ca50ff8d-ed44-4043-b1ec-1c62247d4e44.webp"),
+  "soul-paper-face": soulImg("51362a07-60b0-4270-9125-03dea74ed03e.webp"),
+  "soul-2000s-fashion": soulImg("12160548-47c0-4652-9e2e-3fc9fb413d47.webp"),
+  "soul-movie": soulImg("a8417fb3-3801-4e00-b86f-57a55d59eacd.webp"),
+  "soul-overexposed": soulImg("e668934b-9b36-4263-86e0-cdd58f7c267b.jpg"),
+  "soul-long-legs": soulImg("69a45320-c6ad-4242-8154-915121f42937.webp"),
+  "soul-night-beach": soulImg("270b4eb1-e9b1-4909-9f5e-50ce99697cc6.jpg"),
+  "soul-90-s-editorial": soulImg("9cff0472-88b6-4ee2-a1e6-0976f79cdbe8.webp"),
+  "soul-sitting-on-the-street": soulImg("e4cce90c-943a-45be-a324-0a92fe0fcb9d.jpg"),
+  "soul-glitch": soulImg("bed53d7d-3061-4666-bcd6-2ad890387f97.webp"),
+  "soul-fashionshow": soulImg("c056f71c-31c6-48f5-8d4c-b13bab458ede.jpg"),
+  "soul-artwork": soulImg("40243714-8b1c-44bc-87f2-ef3aacc2daf9.webp"),
+  "soul-graffiti": soulImg("65d773e0-b947-4edc-982e-493ce1f04dc3.webp"),
+  "soul-angel-wings": soulImg("2c8e708f-9fef-498c-bf66-bebfd8452705.webp"),
+  "soul-pixeletedface": soulImg("a6bf56b4-eb67-49e5-aa26-e2dd45882100.webp"),
+  "soul-grillz-selfie": soulImg("f20194ec-4c8f-4ed5-9f23-152f7d09ecec.webp"),
+  "soul-shoe-check": soulImg("55009845-16f0-43b0-a395-48c2bbe1f4d8.jpg"),
+  "soul-bleached-brows": soulImg("aa99b83d-fe92-4542-8dab-b0c708d0cf30.jpg"),
+  "soul-object-makeup": soulImg("bb5c5572-693a-4b21-ba6e-329dc7da2af3.webp"),
+  "soul-360-cam": soulImg("a8951200-becf-4fa3-b41b-3a58e7ebcd72.jpg"),
+  "soul-giant-people": soulImg("b6552305-c29f-4f41-9252-49c5470b2b73.webp"),
+  "soul-help-it-s-too-big": soulImg("77e056f6-89db-4c06-833a-91f143ad4612.webp"),
+  "soul-duplicate": soulImg("0f7a191d-93ea-40a5-ad16-ca2b85fdd753.jpg"),
+  "soul-library": soulImg("4d95d3b1-0db6-4125-a0d7-ba9ba770872f.webp"),
+  "soul-escalator": soulImg("c23eef21-0f45-4e93-8818-1da4a3061d01.webp"),
+  "soul-gallery": soulImg("88d27015-a635-4c0f-bf47-19f7c280a659.webp"),
+  "soul-crossing-the-street": soulImg("9ef39e1b-693e-4560-89e0-6dfb670f42ea.webp"),
+  "soul-sunbathing": soulImg("97b9e378-ad9d-415e-b3f4-f4c8890dfb60.webp"),
+  "soul-subway": soulImg("af958840-be6d-4444-b441-22b7e1891f5d.webp"),
+  "soul-birthday-mess": soulImg("ea75ae9f-fa9a-4706-b1e0-8a01e01389cc.webp"),
+  "soul-static-glow": soulImg("443e1d53-353b-4459-b39e-56f91d141994.webp"),
+  "soul-clouded-dream": soulImg("9ce258c5-ae02-423d-86c7-15cd8073fb61.webp"),
+  "soul-double-take": soulImg("f457ae4c-f11a-448d-b2ec-058835039e58.webp"),
+  "soul-red-balloon": soulImg("504909f4-dad4-4f3a-b398-65e09e644200.webp"),
+  "soul-tokyo-drift": soulImg("f3d48ef2-efd7-40fa-ae07-f19bc8795f54.webp"),
+  "soul-rhyme-blues": soulImg("d39c18e3-0b96-41ab-bcc7-4b6b29e953d5.webp"),
+  "soul-bike-mafia": soulImg("6e02af81-a6ab-4282-b432-da392a92bc31.webp"),
+  "soul-dmv": soulImg("8feebd5a-7c6d-436a-8d38-bbeac7b65f34.webp"),
+  "soul-sea-breeze": soulImg("2f0a3204-759e-446c-bac9-ce83605b6833.webp"),
+  "soul-it-s-french": soulImg("5facd514-6d55-4d45-82a5-ff2e8d5feb99.webp"),
+  "soul-fish-eye-twin": soulImg("dbd126c8-0c0f-4bfc-bb10-76a2cf5a536c.webp"),
+  "soul-hallway-noir": soulImg("8f90d994-1b8d-4760-8afb-738da2975a50.webp"),
+  "soul-burgundy-suit": soulImg("c23aa132-6ff5-4654-9db5-8de98013a0d7.webp"),
+  "soul-nicotine-glow": soulImg("e1e573d1-530b-49e3-aea6-be773312a6a1.webp"),
+  "soul-green-editorial": soulImg("17e1f0f2-fbb0-4380-b5c9-e3e179f1f3a9.webp"),
+  "soul-afterparty-cam": soulImg("529d10c2-8394-44ac-bcea-e2760586e50e.webp"),
+  "soul-2049-hologram": soulImg("cb9644f9-8fe2-4b97-b248-0a232d8de01d.webp"),
+  "soul-fireproof": soulImg("a687cfa3-b2b4-4870-af9a-20ac2d1320ad.webp"),
+  "soul-night-rider": soulImg("4e5723ab-845d-43b2-b540-0202516e2e46.webp"),
+  "soul-chrome-exit": soulImg("45e057de-7a33-4b62-9106-27eb95dcf7fe.webp"),
+  "soul-brick-shade": soulImg("1c8925f9-3dd0-4d5d-9ca7-b5caa9cb9956.webp"),
+  "soul-blackout-fit": soulImg("482a1096-74a2-4ae8-b96b-07192a6b575d.webp"),
+  "soul-cocktail": soulImg("efb9b05f-91b9-49a7-a102-4beb2aeb7639.webp"),
+  "soul-mount-view": soulImg("18867377-6b27-4c64-b141-393fd9f18280.webp"),
+  "soul-sunburnt": soulImg("d423099d-851a-42f4-8bd3-f5535ff6c48c.webp")
 };
 
 const PALETTE_MEDIA = {
@@ -1045,14 +1180,22 @@ const PALETTE_MEDIA = {
 };
 
 const LIGHTING_MEDIA = {
+  "match-ref": { poster: imgProxy(cs4Ctrl("468c6074-9645-4cc3-b632-ba4be3d20e63.webp")) },
   "auto": { poster: imgProxy(cs4Ctrl("468c6074-9645-4cc3-b632-ba4be3d20e63.webp")), videoSrc: cs4Ctrl("72232455-c7bf-4613-ab29-b77e8ab47c56.mp4") },
   "silhouette": { poster: imgProxy(cs4Ctrl("574c8be8-6572-488c-bd92-0d4efb1e76b2.webp")), videoSrc: cs4Ctrl("436a4b98-59e2-42ef-bbfd-6afa9b2d086a.mp4") },
   "practicals": { poster: imgProxy(cs4Ctrl("f9cc8c79-110b-4456-b068-2dd3d5941869.webp")), videoSrc: cs4Ctrl("430248d6-d196-4644-9acd-5bd971df502a.mp4") },
   "window": { poster: imgProxy(cs4Ctrl("659c4612-b39e-4c09-8a61-36f5bea142ad.webp")), videoSrc: cs4Ctrl("ae22f7b5-e044-4f96-bcd9-b87cc677a569.mp4") },
   "overhead-fall": { poster: imgProxy(cs4Ctrl("96ecf21a-ddeb-4701-a815-b9a2274c4f4f.webp")), videoSrc: cs4Ctrl("c8c80362-5f11-4bbc-88f9-61e4277c575a.mp4") },
   "contre-jour": { poster: imgProxy(cs4Ctrl("445d44ac-368e-45a6-b3cb-91e9a6585af6.webp")), videoSrc: cs4Ctrl("f55691e6-714c-4c83-b51f-f3b1eb920b27.mp4") },
-  "soft-cross": { poster: imgProxy(cs4Ctrl("0cfc70a8-ecb9-4d79-a779-79e6d3fdc2c5.webp")), videoSrc: cs4Ctrl("9f754037-bd34-4ce2-8c4f-4489bc280c46.mp4") }
+  "soft-cross": { poster: imgProxy(cs4Ctrl("0cfc70a8-ecb9-4d79-a779-79e6d3fdc2c5.webp")), videoSrc: cs4Ctrl("9f754037-bd34-4ce2-8c4f-4489bc280c46.mp4") },
+  "golden-warm": { poster: cs4Color("abbce116-ac86-4d35-84d9-b0adff031962.webp") },
+  "cyber-neon": { poster: staticImg("30d58d76-3149-4dee-9ffa-920a7ca6eb9e.webp"), videoSrc: staticVid("30d58d76-3149-4dee-9ffa-920a7ca6eb9e.mp4") },
+  "studio-clean": { poster: cs4Color("3a1a5e27-f010-490e-b88d-84a480e2d440.webp") }
 };
+
+STAGE1_PRESETS.forEach((p) => {
+  if (SOUL_MEDIA[p.id]) p.poster = SOUL_MEDIA[p.id];
+});
 
 STAGE2_PRESETS.forEach((p) => {
   if (MOVEMENT_MEDIA[p.id]) {

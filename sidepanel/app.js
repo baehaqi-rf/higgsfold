@@ -32,7 +32,6 @@ import {
 import { createEditingRoomController } from "./editing-room.js";
 import { SoulVaultStore, compressImageToWebP } from "./soul-vault.js";
 import { extractMotionContactSheet } from "./motion-extractor.js";
-import { getPresetPosterUrl } from "./preset-visuals.js";
 
 const chrome =
   typeof globalThis.chrome !== "undefined" && globalThis.chrome?.tabs
@@ -786,26 +785,18 @@ function renderPresets() {
     camGrid.className = "cam-grid";
     stageDiv.appendChild(camGrid);
 
-    const resolvedPoster = getPresetPosterUrl(preset, isVideo);
-    if (resolvedPoster) {
+    const camSubject = document.createElement("div");
+    camSubject.className = `cam-subject ${preset.motionPreview || "preview-dolly"}`;
+    stageDiv.appendChild(camSubject);
+
+    if (preset.poster) {
       const posterImg = document.createElement("img");
-      const isProcedural = !preset.poster;
-      posterImg.className = isProcedural
-        ? `preset-media-img ${preset.motionPreview || "preview-subtle-breath"}`
-        : "preset-media-img";
-      posterImg.src = resolvedPoster;
+      posterImg.className = "preset-media-img";
+      posterImg.src = preset.poster;
       posterImg.alt = preset.name;
       posterImg.loading = "lazy";
-      posterImg.onerror = () => {
-        if (posterImg.dataset.fallbackApplied) return;
-        posterImg.dataset.fallbackApplied = "1";
-        posterImg.src = getPresetPosterUrl({ ...preset, poster: "" }, isVideo);
-      };
+      posterImg.onerror = () => posterImg.remove();
       stageDiv.appendChild(posterImg);
-    } else {
-      const camSubject = document.createElement("div");
-      camSubject.className = `cam-subject ${preset.motionPreview || "preview-dolly"}`;
-      stageDiv.appendChild(camSubject);
     }
 
     if (preset.videoSrc) {
