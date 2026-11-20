@@ -775,3 +775,95 @@ export const MOTION_CONTROL_MODES = [
   { id: "video-bg", label: "Follow Video Scene", text: "Preserve choreography, body cadence, timing, and environmental perspective from the motion reference video." },
   { id: "image-bg", label: "Keep Character Scene", text: "Transfer strictly the subject's skeletal motion and camera rhythm while preserving the background and lighting of the target character image." }
 ];
+
+// Ground-truth Higgsfield CDN preview posters & hover videos (from Cinema Studio 4.0 extraction)
+const imgProxy = (url) => `https://images.higgs.ai/?default=1&output=webp&url=${encodeURIComponent(url)}&w=384&q=85`;
+const cs4Ctrl = (file) => `https://cdn.higgsfield.ai/cinema_studio_40_creative_controls/${file}`;
+const cs4Color = (file) => `https://higgsfield.ai/cdn-cgi/image/fit=scale-down,format=webp,onerror=redirect,width=1920,quality=85/https://cdn.higgsfield.ai/cinema_studio_40_color_presets/${file}`;
+
+const MOVEMENT_MEDIA = {
+  "snorricam-chest": { poster: imgProxy(cs4Ctrl("f74144c0-afc3-4d7e-b07b-76b16b6cd187.webp")), videoSrc: cs4Ctrl("41f533bc-e56a-4807-9966-1b7f487a6fa4.mp4") },
+  "robot-arm-bolt": { poster: imgProxy(cs4Ctrl("08dd3e7e-45ab-4c33-b035-3ffb132e241e.webp")), videoSrc: cs4Ctrl("9be4a814-7030-416f-9e02-4d99dd92b9b2.mp4") },
+  "tilt-up": { poster: imgProxy(cs4Ctrl("ab10a655-8901-4dd7-8c54-0c76d88a6a62.webp")), videoSrc: cs4Ctrl("9ad89e82-805c-4f66-8ce4-80c401e075ff.mp4") },
+  "rack-focus-shift": { poster: imgProxy(cs4Ctrl("a85cb540-7108-45e3-ac63-bf3ed2de42d7.webp")), videoSrc: cs4Ctrl("f86bd18a-e233-4d3f-bc1c-2e5c08c02c69.mp4") },
+  "tilt-down": { poster: imgProxy(cs4Ctrl("c5d8fd64-4242-4de5-b941-27ba1b7a684c.webp")), videoSrc: cs4Ctrl("551af919-f1f4-4d5e-8eef-1ac88295bd5d.mp4") },
+  "pov-first-person": { poster: cs4Ctrl("6031271f-54fd-4d12-97bf-f1cd340aa269.webp") },
+  "pan-left": { poster: cs4Ctrl("c5cdbc2f-1044-4f3d-924d-bd8516f15063.webp") },
+  "crane-jib-rise": { poster: cs4Ctrl("e665aeba-0b1a-45d7-bcea-86a010baa9f7.webp") },
+  "pan-right": { poster: cs4Ctrl("63ecb1ea-df5b-45e6-bff9-079a1a6fd23f.webp") },
+  "crane-down-drop": { poster: cs4Ctrl("459b7457-eb08-405a-8eda-ee15b871bf29.webp") },
+  "side-tracking-follow": { poster: cs4Ctrl("c076f77c-627b-4f87-90d2-3478024142cd.webp") },
+  "pedestal-up": { poster: cs4Ctrl("f5877174-1a69-431a-95f4-02b5f115b72b.webp") },
+  "pedestal-down": { poster: cs4Ctrl("0b11f953-2cd4-4b80-ba5e-50c28d240b56.webp") },
+  "handheld-docu-follow": { poster: cs4Ctrl("9dd7f7f2-4525-4e1a-bce8-1c77bdcde538.webp") },
+  "tracking-shot": { poster: cs4Ctrl("d352b3b2-d161-4f36-b62d-05707c357beb.webp") },
+  "drone-orbit-wide": { poster: cs4Ctrl("dde2ae70-9d21-45ef-996f-c5a73c0e1aef.webp") },
+  "vertigo-dolly-zoom": { poster: imgProxy(cs4Ctrl("6f9ced07-5f77-49a3-a79c-e2608f5c5bb6.webp")), videoSrc: cs4Ctrl("8aa44e1d-32e8-4368-9a47-f40ffda77d5a.mp4") },
+  "aerial-pullback": { poster: imgProxy(cs4Ctrl("ff4d0638-b321-4054-8444-37c7c86c07b0.webp")), videoSrc: cs4Ctrl("e6233943-40ee-4a82-88c5-052e262b7eff.mp4") },
+  "static-cinema-lock": { poster: imgProxy(cs4Ctrl("dd8b74ed-ab90-4eca-8f7d-00d4e4dd364c.webp")), videoSrc: cs4Ctrl("a8449dc8-41ec-49fc-90f4-81d74d9f7066.mp4") },
+  "bullet-time-orbit": { poster: imgProxy(cs4Ctrl("32a345fc-4f06-4392-a9fe-39f411922a70.webp")), videoSrc: cs4Ctrl("4e24525e-b626-4ac0-a22a-2365fee28c2c.mp4") },
+  "whip-pan-reveal": { poster: imgProxy(cs4Ctrl("bff738bb-888a-49c7-9e35-29c891298d12.webp")), videoSrc: cs4Ctrl("3b30b328-199f-456d-84c6-a4b20efcadf3.mp4") },
+  "slow-zoom-in": { poster: imgProxy(cs4Ctrl("e514e07b-ee64-4b2a-bd2b-807643d7b132.webp")), videoSrc: cs4Ctrl("fd673dee-53c4-4cfa-a7f5-9690c407cab8.mp4") },
+  "arc-left": { poster: imgProxy(cs4Ctrl("73f89729-35d9-4100-b840-59dacf819ae4.webp")), videoSrc: cs4Ctrl("052d0323-8a28-41ce-b7bc-db94e39580b9.mp4") },
+  "slow-zoom-out": { poster: imgProxy(cs4Ctrl("9d9895e4-37e7-4dc9-baa5-673a5b408a8f.webp")), videoSrc: cs4Ctrl("c2046a8a-831e-4aa2-a8b3-6a05e384b2c0.mp4") },
+  "arc-right": { poster: imgProxy(cs4Ctrl("40bd5464-c4db-492a-9334-28c0a03ef23f.webp")), videoSrc: cs4Ctrl("11688e66-674d-45f5-9f9b-4543974ad12c.mp4") },
+  "truck-right": { poster: imgProxy(cs4Ctrl("599ecaf0-2efb-4f91-af04-00ab4db120dd.webp")), videoSrc: cs4Ctrl("bd898ff8-e0a8-4b44-a41f-ceb723e5b414.mp4") },
+  "dolly-push-hero": { poster: imgProxy(cs4Ctrl("f2d19ee8-6f11-424a-b8ee-ec4b919b6124.webp")), videoSrc: cs4Ctrl("801093dc-0817-44ba-87da-6e544f218c0e.mp4") },
+  "truck-left": { poster: imgProxy(cs4Ctrl("1b7cb488-d455-4fca-9560-395d98eda3da.webp")), videoSrc: cs4Ctrl("4908b3bd-26b4-4c6d-8414-c4f093858066.mp4") },
+  "dolly-out-reveal": { poster: imgProxy(cs4Ctrl("a3b7d521-9e89-4bda-b20e-f0efbfb239d0.webp")), videoSrc: cs4Ctrl("5fab33de-d50b-4eea-bac1-d1605bc88a80.mp4") },
+  "slider-right": { poster: imgProxy(cs4Ctrl("3c2bc6c0-b1dd-48b0-831e-c2a7ca1838e8.webp")), videoSrc: cs4Ctrl("47b73a55-9dc7-4826-b7ea-71d33c3793a3.mp4") },
+  "crash-zoom-in": { poster: imgProxy(cs4Ctrl("2fc0b86d-a755-48e7-aa33-b7080fa6a36c.webp")), videoSrc: cs4Ctrl("7e76d6a7-7360-4254-8c0c-7afbec20248a.mp4") },
+  "slider-left": { poster: imgProxy(cs4Ctrl("db4ff5ec-8386-46d5-b907-1d9eb0cc59df.webp")), videoSrc: cs4Ctrl("809b7c81-8ce9-4d6c-b042-dcb46cfb0e9b.mp4") },
+  "helicopter-shot": { poster: imgProxy(cs4Ctrl("9f351ee9-54e8-4b4a-b104-1bbd7f8db714.webp")), videoSrc: cs4Ctrl("c5f97f2c-f96b-479c-a2ff-ae37e7d79b07.mp4") }
+};
+
+const PALETTE_MEDIA = {
+  "lime-jam": imgProxy("https://d2ol7oe51mr4n9.cloudfront.net/content_user_id/947a83c7-da09-4ff8-9337-dff1d2921454.png"),
+  "film-colors": imgProxy("https://d2ol7oe51mr4n9.cloudfront.net/content_user_id/20cf0766-d88a-4a20-834c-55aca0fd6d2a.png"),
+  "black-gloss": imgProxy("https://d2ol7oe51mr4n9.cloudfront.net/content_user_id/c20568e5-e7d6-486d-b7c6-4a23336a28cc.jpg"),
+  "nostalgic-blue": imgProxy("https://d2ol7oe51mr4n9.cloudfront.net/content_user_id/a8e99b3d-3998-413a-8095-6ca30d2419f5.png"),
+  "soft-palette": imgProxy("https://d2ol7oe51mr4n9.cloudfront.net/content_user_id/4e648808-391c-4634-8310-79d085e3ffc0.jpg"),
+  "candy-pink": imgProxy("https://d2ol7oe51mr4n9.cloudfront.net/content_user_id/ddd630b7-2feb-43da-b35b-79670a0ab4c5.webp"),
+  "static-noon": cs4Color("abbce116-ac86-4d35-84d9-b0adff031962.webp"),
+  "twilight-fable": cs4Color("7104bc8d-f658-414e-b5c5-a34b87c7dfae.webp"),
+  "back-row-kissing-seats": cs4Color("5b59386f-4fe9-48c2-9723-d98783458ccf.webp"),
+  "other-side-porthole": cs4Color("74e3315e-c581-47d8-bd42-89f67993ca55.webp"),
+  "emerald-ambush": cs4Color("269a3671-1c7f-4f8f-900d-cf1192cbdcc1.webp"),
+  "highway-standoff": cs4Color("dfa8708a-adbf-4375-a3df-768f4465e6a8.webp"),
+  "faded-fresco": cs4Color("3a1a5e27-f010-490e-b88d-84a480e2d440.webp"),
+  "oil-ochre": cs4Color("8d5f2cc0-959e-44ac-a4a8-89803cb4ffe8.webp"),
+  "mountain-convent": cs4Color("db7fd459-9518-43de-8f75-25d57c8cf783.webp"),
+  "ghost-in-the-code": cs4Color("5a3f634a-3a49-47b8-a3df-438f42b9ee5e.webp"),
+  "pink-velvet": cs4Color("5353b968-27ea-4f7d-a218-391a3ddabafd.webp"),
+  "two-days-horizon": cs4Color("0cec6501-eabd-4705-99ed-f5e18d40f553.webp"),
+  "industrial-fog": cs4Color("37cb0b27-ebd2-410a-8ca3-ef3fa29ce9f7.webp"),
+  "stairs-go-up": cs4Color("4ba81239-256f-481e-a08c-cabf39f67a58.webp")
+};
+
+const LIGHTING_MEDIA = {
+  "auto": { poster: imgProxy(cs4Ctrl("468c6074-9645-4cc3-b632-ba4be3d20e63.webp")), videoSrc: cs4Ctrl("72232455-c7bf-4613-ab29-b77e8ab47c56.mp4") },
+  "silhouette": { poster: imgProxy(cs4Ctrl("574c8be8-6572-488c-bd92-0d4efb1e76b2.webp")), videoSrc: cs4Ctrl("436a4b98-59e2-42ef-bbfd-6afa9b2d086a.mp4") },
+  "practicals": { poster: imgProxy(cs4Ctrl("f9cc8c79-110b-4456-b068-2dd3d5941869.webp")), videoSrc: cs4Ctrl("430248d6-d196-4644-9acd-5bd971df502a.mp4") },
+  "window": { poster: imgProxy(cs4Ctrl("659c4612-b39e-4c09-8a61-36f5bea142ad.webp")), videoSrc: cs4Ctrl("ae22f7b5-e044-4f96-bcd9-b87cc677a569.mp4") },
+  "overhead-fall": { poster: imgProxy(cs4Ctrl("96ecf21a-ddeb-4701-a815-b9a2274c4f4f.webp")), videoSrc: cs4Ctrl("c8c80362-5f11-4bbc-88f9-61e4277c575a.mp4") },
+  "contre-jour": { poster: imgProxy(cs4Ctrl("445d44ac-368e-45a6-b3cb-91e9a6585af6.webp")), videoSrc: cs4Ctrl("f55691e6-714c-4c83-b51f-f3b1eb920b27.mp4") },
+  "soft-cross": { poster: imgProxy(cs4Ctrl("0cfc70a8-ecb9-4d79-a779-79e6d3fdc2c5.webp")), videoSrc: cs4Ctrl("9f754037-bd34-4ce2-8c4f-4489bc280c46.mp4") }
+};
+
+STAGE2_PRESETS.forEach((p) => {
+  if (MOVEMENT_MEDIA[p.id]) {
+    p.poster = MOVEMENT_MEDIA[p.id].poster;
+    if (MOVEMENT_MEDIA[p.id].videoSrc) p.videoSrc = MOVEMENT_MEDIA[p.id].videoSrc;
+  }
+});
+
+COLOR_PALETTES.forEach((p) => {
+  if (PALETTE_MEDIA[p.id]) p.imageSrc = PALETTE_MEDIA[p.id];
+});
+
+LIGHTING_MOODS.forEach((p) => {
+  if (LIGHTING_MEDIA[p.id]) {
+    p.poster = LIGHTING_MEDIA[p.id].poster;
+    p.videoSrc = LIGHTING_MEDIA[p.id].videoSrc;
+  }
+});

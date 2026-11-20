@@ -3,397 +3,521 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HiggsFold Studio v3.0</title>
+  <title>Cinema Studio 4.0 — HiggsFold AI Director</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="app-shell">
-    <!-- Top Header -->
-    <header class="studio-header">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">H</div>
-        <div class="brand-text">
-          <h1>HiggsFold <span class="version-pill">v3.0</span></h1>
-          <p class="subtitle">Flow &amp; Gemini Director</p>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button id="btn-picker" class="icon-btn" type="button" title="Bind DOM Target (Click input &amp; button on active page)">
-          <span>Bind</span>
-        </button>
-        <button id="btn-custom-preset" class="icon-btn" type="button" title="Custom Preset Builder &amp; JSON Import/Export">
-          <span>+Preset</span>
-        </button>
-        <button id="btn-editing-room" class="icon-btn" type="button" title="Editing Room (Timeline Preview &amp; WebM Export)">
-          <span>Edit</span>
-        </button>
-        <button id="btn-storyboard" class="icon-btn" type="button" title="Storyboard Shot List">
-          <span>Shots</span>
-          <span id="shot-count" class="count-pill">0</span>
-        </button>
-        <button id="btn-history" class="icon-btn" type="button" title="Prompt History">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="1 4 1 10 7 10"></polyline>
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+<body class="antialiased scheme-only-dark">
+  <div id="hf-app" class="hf-shell">
+    <!-- Desktop 1:1 Left Sidebar (visible on >= 880px or ?full=1) -->
+    <aside class="hf-sidebar" aria-label="Cinema Studio Navigation">
+      <div class="hf-sidebar-top">
+        <button id="btn-space-switcher" class="hf-space-btn" type="button">
+          <span class="hf-brand-svg">
+            <svg width="24" height="24" viewBox="4 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#D1FE17" d="M4 6a6 6 0 0 1 6-6h12a6 6 0 0 1 6 6v12a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6z"></path>
+              <path fill="#1A1A1A" d="m26.02 11.805-.02-.216c-.18-2.068-1.484-5.958-5.102-5.958-2.685 0-4.713 2.734-6.502 5.145-1.428 1.93-2.666 3.586-4.027 3.586-.362-.04-.828-.225-1.114-.647-.257-.382-.324-.872-.19-1.46.209-.93 1.409-1.793 2.675-2.714.694-.49 1.409-1.01 1.904-1.51 1.428-1.42 2.151-2.449 2.151-4.105s-.885-2.48-1.628-2.832C12.682.389 10.502.8 9.112 2.035c-.209.196-.419.382-.61.558C7.104 3.877 6.163 4.75 4 4.083v2.685c2.865 1.303 5.274-1.186 6.188-2.332.704-.755 1.447-1.196 2-1.196h.028c.248.01.457.108.61.284.247.294.342.637.294 1.02-.104.803-.913 1.744-2.399 2.773-1.742 1.205-4.655 3.223-4.884 5.762-.17 1.822.743 3.645 2.171 4.35 3.332 1.627 5.36-1.176 7.511-4.135 1.647-2.283 3.208-4.449 5.38-4.449 1.95 0 2.674 1.666 2.674 2.715v.205l-.19.04c-4.732.862-7.312 5.428-7.312 7.535s1.733 3.91 3.865 3.91c2.495 0 5.58-2.195 6.074-8.368l.02-.226H28v-2.851zm-2.58 3.165c-.38 3.694-2.218 5.418-3.332 5.418-.505 0-1.21-.43-1.21-1.234 0-.902 1.305-3.636 4.237-4.449l.343-.088z"></path>
+            </svg>
+          </span>
+          <span class="hf-space-title">Cinema Studio</span>
+          <svg width="6" height="10" viewBox="0 0 6 10" fill="none" class="hf-chev">
+            <path d="M5.85 0.80a.44.44 0 0 0 0-.66.49.49 0 0 0-.69 0L3 2.24 0.83.14a.49.49 0 0 0-.69 0 .44.44 0 0 0 0 .66L2.65 3.23a.5.5 0 0 0 .69 0L5.85.80Z" fill="currentColor"></path>
+            <path d="M0.15 9.20a.44.44 0 0 0 0 .66.49.49 0 0 0 .69 0L3 7.76l2.17 2.10a.49.49 0 0 0 .69 0 .44.44 0 0 0 0-.66L3.35 6.77a.5.5 0 0 0-.69 0L0.15 9.20Z" fill="currentColor"></path>
           </svg>
         </button>
       </div>
-    </header>
 
-    <!-- Connection Status Bar -->
-    <div id="tab-status" class="status-bar status-idle">
-      <span class="status-dot"></span>
-      <span id="status-text">Checking active tab...</span>
-      <div class="status-actions">
-        <button id="btn-sync-flow" class="pill-btn hidden" type="button" title="Sync Mode, Aspect Ratio &amp; Batch to Google Flow Settings">Sync Flow</button>
-        <button id="btn-open-flow" class="link-btn" type="button">Open Flow</button>
+      <nav class="hf-side-nav">
+        <button class="hf-nav-item active" data-side-nav="stage2" type="button">
+          <span class="hf-nav-badge badge-cyan">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><path d="M10.56 5.11c.32 0 .61.2.73.5l1.04 2.72c.08.2.24.37.45.45l2.72 1.04c.3.12.5.4.5.73s-.2.61-.5.73l-2.72 1.04c-.2.08-.37.24-.45.45l-1.04 2.72a.78.78 0 0 1-.73.5.78.78 0 0 1-.73-.5l-1.04-2.72a.78.78 0 0 0-.45-.45L5.61 11.29a.78.78 0 0 1-.5-.73c0-.32.2-.61.5-.73l2.72-1.04c.2-.08.37-.24.45-.45l1.04-2.72c.12-.3.4-.5.73-.5ZM5.11 2c.19 0 .36.12.42.29l.54 1.41c.08.2.24.37.45.45l1.41.54c.17.07.29.24.29.42s-.12.36-.29.42l-1.41.54a.68.68 0 0 0-.45.45l-.54 1.41a.45.45 0 0 1-.42.29.45.45 0 0 1-.42-.29l-.54-1.41a.68.68 0 0 0-.45-.45L2.29 5.53A.45.45 0 0 1 2 5.11c0-.19.12-.36.29-.42l1.41-.54a.68.68 0 0 0 .45-.45l.54-1.41A.45.45 0 0 1 5.11 2Z" fill="currentColor"></path></svg>
+          </span>
+          <span>Motion Studio (35)</span>
+        </button>
+        <button class="hf-nav-item" data-side-nav="stage1" type="button">
+          <span class="hf-nav-badge badge-dark">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83 1.27a1.3 1.3 0 0 0-1.66 0L2.73 5.71c-.3.25-.48.62-.48 1.02v7.71c0 .72.59 1.31 1.31 1.31h10.88c.72 0 1.31-.59 1.31-1.31V6.73c0-.4-.18-.77-.48-1.02L9.83 1.27Z" fill="currentColor"></path></svg>
+          </span>
+          <span>Keyframe &amp; Soul (113)</span>
+        </button>
+        <button class="hf-nav-item" data-side-nav="lipsync" type="button">
+          <span class="hf-nav-badge badge-pink">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><path d="M9 3.25c1-.73 2-.99 3.08-.99 1.12 0 2.23.45 3.06 1.34.84.89 1.36 2.2 1.36 3.86 0 2.49-1.76 4.57-3.46 5.97C11.35 14.84 9.7 15.75 9 15.75c-.7 0-2.35-.91-4.04-2.32C3.26 12.02 1.5 9.94 1.5 7.45c0-1.67.52-2.97 1.36-3.86C3.69 2.7 4.8 2.25 5.92 2.25c1.08 0 2.08.27 3.08 1Z" fill="currentColor"></path></svg>
+          </span>
+          <span>Lipsync Studio</span>
+        </button>
+        <button class="hf-nav-item" data-side-nav="motion_control" type="button">
+          <span class="hf-nav-badge badge-blue">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><path d="M9 1.1a7.9 7.9 0 1 0 3.74 14.86.95.95 0 0 0-.9-1.67 5.97 5.97 0 1 1 3.13-5.29c0 .6-.16 1.14-.4 1.48-.21.29-.5.47-1.01.42-.86-.08-1.49-.87-1.36-1.73l.4-2.73a.95.95 0 0 0-1.78-.59 3.6 3.6 0 0 0-5.77 2.65 3.6 3.6 0 0 0 3 4.42c1.23.17 2.34-.35 3.1-1.22.56.62 1.34 1.04 2.24 1.12 1.21.11 2.15-.4 2.74-1.21.55-.76.77-1.74.77-2.61A7.9 7.9 0 0 0 9 1.1Zm-.11 5.88c.79.11 1.53 1.01 1.36 2.25-.17 1.23-1.14 1.9-1.93 1.79-.79-.11-1.53-1.01-1.36-2.25.17-1.24 1.13-1.9 1.93-1.79Z" fill="currentColor"></path></svg>
+          </span>
+          <span>Motion Control</span>
+        </button>
+        <button class="hf-nav-item" data-side-nav="drama" type="button">
+          <span class="hf-nav-badge badge-gray">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.6"></circle><path d="M4.5 9h9M9 4.5v9" stroke="currentColor" stroke-width="1.4"></path></svg>
+          </span>
+          <span>Short Drama</span>
+        </button>
+      </nav>
+
+      <div class="hf-side-section">
+        <div class="hf-side-label">Studio Tools</div>
+        <button id="btn-side-storyboard" class="hf-side-link" type="button">Storyboard Shots</button>
+        <button id="btn-side-editing" class="hf-side-link" type="button">Editing Room</button>
+        <button id="btn-side-custom" class="hf-side-link" type="button">Custom Presets</button>
+        <button id="btn-side-history" class="hf-side-link" type="button">Generation History</button>
       </div>
+
+      <div class="hf-sidebar-footer">
+        <div class="hf-pro-card">
+          <span>Google AI Pro Bridge</span>
+          <span class="hf-promo-pill">OMNI 1.2</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Right Workspace -->
+    <div class="hf-main">
+      <!-- Top Studio Header -->
+      <header class="studio-header">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg width="24" height="24" viewBox="4 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#D1FE17" d="M4 6a6 6 0 0 1 6-6h12a6 6 0 0 1 6 6v12a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6z"></path>
+              <path fill="#1A1A1A" d="m26.02 11.805-.02-.216c-.18-2.068-1.484-5.958-5.102-5.958-2.685 0-4.713 2.734-6.502 5.145-1.428 1.93-2.666 3.586-4.027 3.586-.362-.04-.828-.225-1.114-.647-.257-.382-.324-.872-.19-1.46.209-.93 1.409-1.793 2.675-2.714.694-.49 1.409-1.01 1.904-1.51 1.428-1.42 2.151-2.449 2.151-4.105s-.885-2.48-1.628-2.832C12.682.389 10.502.8 9.112 2.035c-.209.196-.419.382-.61.558C7.104 3.877 6.163 4.75 4 4.083v2.685c2.865 1.303 5.274-1.186 6.188-2.332.704-.755 1.447-1.196 2-1.196h.028c.248.01.457.108.61.284.247.294.342.637.294 1.02-.104.803-.913 1.744-2.399 2.773-1.742 1.205-4.655 3.223-4.884 5.762-.17 1.822.743 3.645 2.171 4.35 3.332 1.627 5.36-1.176 7.511-4.135 1.647-2.283 3.208-4.449 5.38-4.449 1.95 0 2.674 1.666 2.674 2.715v.205l-.19.04c-4.732.862-7.312 5.428-7.312 7.535s1.733 3.91 3.865 3.91c2.495 0 5.58-2.195 6.074-8.368l.02-.226H28v-2.851zm-2.58 3.165c-.38 3.694-2.218 5.418-3.332 5.418-.505 0-1.21-.43-1.21-1.234 0-.902 1.305-3.636 4.237-4.449l.343-.088z"></path>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>Cinema Studio <span class="version-pill">4.0</span></h1>
+            <p class="subtitle">HiggsFold • Google Flow Bridge</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="btn-expand-studio" class="icon-btn" type="button" title="Open Full 1:1 Desktop Cinema Studio Tab">
+            <span>↗</span>
+          </button>
+          <button id="btn-picker" class="icon-btn" type="button" title="Bind DOM Target on active page">
+            <span>Bind</span>
+          </button>
+          <button id="btn-custom-preset" class="icon-btn" type="button" title="Custom Preset Builder &amp; JSON">
+            <span>+Preset</span>
+          </button>
+          <button id="btn-editing-room" class="icon-btn" type="button" title="Editing Room">
+            <span>Edit</span>
+          </button>
+          <button id="btn-storyboard" class="icon-btn" type="button" title="Storyboard Shot List">
+            <span>Shots</span>
+            <span id="shot-count" class="count-pill">0</span>
+          </button>
+          <button id="btn-history" class="icon-btn" type="button" title="Prompt History">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Connection Status Bar -->
+      <div id="tab-status" class="status-bar status-idle">
+        <span class="status-dot"></span>
+        <span id="status-text">Checking active tab...</span>
+        <div class="status-actions">
+          <button id="btn-sync-flow" class="pill-btn hidden" type="button">Sync Flow</button>
+          <button id="btn-open-flow" class="link-btn" type="button">Open Flow</button>
+        </div>
+      </div>
+
+      <!-- Desktop Ambient Hero Canvas (visible on >= 880px or ?full=1) -->
+      <div class="hf-hero-stage" aria-hidden="true">
+        <div class="hf-glow-left"></div>
+        <div class="hf-glow-right"></div>
+        <div class="hf-hero-content">
+          <img class="hf-hero-thumb" src="https://static.higgsfield.ai/ai-discord/chatThumbnail.png" alt="" />
+          <h2 class="hf-hero-title">START CREATING WITH<br />CINEMA STUDIO 4.0</h2>
+          <p class="hf-hero-sub">Describe your scene below, configure Film Setup, Camera &amp; Palette, and inject directly into Google Flow or Gemini.</p>
+        </div>
+      </div>
+
+      <!-- Main Scrollable Studio Workspace -->
+      <main class="workspace">
+        <!-- Studio Mode Selector (Glass Mode Dock + Sub-Studios) -->
+        <section class="studio-nav-wrap">
+          <div class="stage-tabs" role="tablist" aria-label="Primary Pipeline">
+            <button class="stage-tab active" data-stage="stage2" role="tab" aria-selected="true" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.75 6.25a1 1 0 0 1 1-1h12.5a1 1 0 0 1 1 1v11.5a1 1 0 0 1-1 1H3.75a1 1 0 0 1-1-1zM17.25 9l3.094-1.375a1 1 0 0 1 1.406.914v6.922a1 1 0 0 1-1.406.914L17.25 15"></path>
+              </svg>
+              <div>
+                <span class="stage-kicker">VIDEO • OMNI 1.2</span>
+                <span class="stage-name">Motion (35)</span>
+              </div>
+            </button>
+            <button class="stage-tab" data-stage="stage1" role="tab" aria-selected="false" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill="currentColor" fill-rule="evenodd" d="M3 4.75C3 3.784 3.784 3 4.75 3h14.5c.966 0 1.75.784 1.75 1.75v14.5A1.75 1.75 0 0 1 19.25 21H4.75A1.75 1.75 0 0 1 3 19.25zm1.75-.25a.25.25 0 0 0-.25.25v9.69l2.263-2.263a1.75 1.75 0 0 1 2.474 0l7.324 7.323h2.689a.25.25 0 0 0 .25-.25V4.75a.25.25 0 0 0-.25-.25zm9.69 15-6.263-6.263a.25.25 0 0 0-.354 0L4.5 16.561v2.689c0 .138.112.25.25.25z" clip-rule="evenodd"></path>
+                <path fill="currentColor" d="M13.426 8.537a.25.25 0 0 0 .111-.112l.74-1.478a.25.25 0 0 1 .447 0l.739 1.478a.25.25 0 0 0 .112.112l1.478.74a.25.25 0 0 1 0 .447l-1.479.739a.25.25 0 0 0-.111.112l-.74 1.478a.25.25 0 0 1-.447 0l-.739-1.479a.25.25 0 0 0-.112-.111l-1.478-.74a.25.25 0 0 1 0-.447z"></path>
+              </svg>
+              <div>
+                <span class="stage-kicker">SOUL • NANO 2.1</span>
+                <span class="stage-name">Keyframe (113)</span>
+              </div>
+            </button>
+          </div>
+          <div class="studio-subtabs" role="tablist" aria-label="Additional Studios">
+            <button class="sub-tab" data-stage="lipsync" role="tab" aria-selected="false" type="button">Lipsync Studio</button>
+            <button class="sub-tab" data-stage="motion_control" role="tab" aria-selected="false" type="button">Motion Control</button>
+            <button class="sub-tab" data-stage="drama" role="tab" aria-selected="false" type="button">Short Drama</button>
+          </div>
+        </section>
+
+        <!-- Higgsfield Cinema Studio 4.0 Floating Dock -->
+        <section class="hf-dock">
+          <!-- Top Control Strip (References, Film setup, Camera, Color palette, Lighting) -->
+          <div class="hf-top-strip">
+            <button id="pill-references" class="hf-strip-pill" type="button" data-popover="references">
+              <span class="hf-strip-thumb glass-plus">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path fill="currentColor" d="M11.25 18.75v-6h-6a.75.75 0 0 1 0-1.5h6v-6a.75.75 0 0 1 1.5 0v6h6a.75.75 0 0 1 0 1.5h-6v6a.75.75 0 0 1-1.5 0"></path></svg>
+              </span>
+              <span class="hf-strip-meta">
+                <span class="hf-strip-kicker">References</span>
+                <span id="val-references" class="hf-strip-val">0/1</span>
+              </span>
+            </button>
+
+            <button id="pill-film" class="hf-strip-pill" type="button" data-popover="film">
+              <span class="hf-strip-thumb">
+                <img src="https://static.higgsfield.ai/public/cinema-studio-4/camera-roll-animated.svg" alt="" />
+              </span>
+              <span class="hf-strip-meta">
+                <span class="hf-strip-kicker">Film setup</span>
+                <span id="val-film" class="hf-strip-val">Auto</span>
+              </span>
+            </button>
+
+            <button id="pill-camera" class="hf-strip-pill" type="button" data-popover="camera">
+              <span class="hf-strip-thumb">
+                <img src="https://static.higgsfield.ai/public/cinematic/v40/camera-settings.svg" alt="" />
+              </span>
+              <span class="hf-strip-meta">
+                <span class="hf-strip-kicker">Camera</span>
+                <span id="val-camera" class="hf-strip-val">Auto</span>
+              </span>
+            </button>
+
+            <button id="pill-palette" class="hf-strip-pill" type="button" data-popover="palette">
+              <span class="hf-strip-thumb">
+                <img src="https://static.higgsfield.ai/public/cinematic/v40/color-palette-default.webp" alt="" />
+              </span>
+              <span class="hf-strip-meta">
+                <span class="hf-strip-kicker">Color palette</span>
+                <span id="val-palette" class="hf-strip-val">Auto</span>
+              </span>
+            </button>
+
+            <button id="pill-lighting" class="hf-strip-pill" type="button" data-popover="lighting">
+              <span class="hf-strip-thumb">
+                <img src="https://static.higgsfield.ai/public/cinematic/v40/lightning.webp" alt="" />
+              </span>
+              <span class="hf-strip-meta">
+                <span class="hf-strip-kicker">Lighting</span>
+                <span id="val-lighting" class="hf-strip-val">Match Ref</span>
+              </span>
+            </button>
+          </div>
+
+          <!-- Composer Box (Higgsfield rounded-[20px] bg-white/5) -->
+          <div class="hf-composer">
+            <div class="hf-composer-left">
+              <!-- Subject & @Element Lock -->
+              <div id="subject-section" class="hf-subject-wrap">
+                <div class="hf-subject-row">
+                  <textarea
+                    id="subject-input"
+                    rows="2"
+                    placeholder="Describe your scene - use @ to add characters &amp; locations"
+                  ></textarea>
+                  <button id="btn-clear-input" class="text-btn hf-clear-x" type="button" title="Clear scene">✕</button>
+                </div>
+                <div class="hf-element-bar">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M16.87 19.87A9.25 9.25 0 1 1 21.25 12c0 1.98-.98 4.02-3.28 3.82-1.89-.17-3.25-1.89-2.98-3.77l.53-3.65m-.59 4.08c-.31 2.19-2.11 3.74-4.02 3.47-1.91-.27-3.22-2.26-2.91-4.45.31-2.19 2.11-3.74 4.02-3.47 1.91.27 3.22 2.26 2.91 4.45Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                  <input
+                    id="character-lock"
+                    type="text"
+                    class="hf-inline-input"
+                    placeholder="Character / @Element lock (optional, e.g., '@mina_soul, black trench')"
+                  />
+                </div>
+              </div>
+
+              <!-- Higgsfield Bottom Pill Toolbar -->
+              <div class="hf-toolbar-row">
+                <button id="btn-dock-ref" class="hf-tool-icon" type="button" title="References &amp; Color Transfer" data-popover="references">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-width="1.6" d="M12 5.25v13.5M5.25 12h13.5"></path></svg>
+                </button>
+                <button id="btn-dock-cam" class="hf-tool-icon" type="button" title="Camera Movements &amp; Optics" data-popover="camera">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M8.25 20.25H4.75a1 1 0 0 1-1-1v-3.5m12 4.5h3.5a1 1 0 0 0 1-1v-3.5M3.75 8.25v-3.5a1 1 0 0 1 1-1h3.5m7.5 0h3.5a1 1 0 0 1 1 1v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><rect x="7.75" y="7.75" width="8.5" height="7.5" rx="1" stroke="currentColor" stroke-width="1.5"></rect><circle cx="12" cy="11.5" r="1.1" stroke="currentColor" stroke-width="1.4"></circle></svg>
+                </button>
+                <div class="hf-model-pill" title="Target Google AI Pro Engine">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="m13.514 7.896-.01-.115c-.1-1.103-.818-3.178-2.809-3.178-1.477 0-2.593 1.458-3.578 2.744-.786 1.03-1.466 1.913-2.216 1.913a.865.865 0 0 1-.613-.345c-.141-.204-.178-.465-.104-.779.115-.496.775-.956 1.472-1.448.382-.26.775-.538 1.047-.804.786-.758 1.184-1.307 1.184-2.19s-.487-1.322-.895-1.51c-.818-.377-2.017-.157-2.782.501-.115.105-.23.204-.335.298-.77.685-1.289 1.15-2.478.794V5.21c1.577.696 2.902-.632 3.405-1.243.388-.403.796-.638 1.1-.638h.016a.46.46 0 0 1 .335.152c.136.157.189.34.163.543-.058.429-.503.93-1.32 1.48-.96.642-2.562 1.719-2.688 3.072-.094.972.408 1.944 1.194 2.32 1.834.868 2.95-.627 4.134-2.205.906-1.218 1.765-2.373 2.96-2.373 1.073 0 1.472.889 1.472 1.448v.11l-.105.02c-2.604.46-4.024 2.896-4.024 4.02 0 1.123.954 2.085 2.127 2.085 1.373 0 3.07-1.17 3.342-4.463l.011-.12h1.084V7.896h-1.09Zm-1.42 1.688c-.21 1.97-1.22 2.89-1.833 2.89-.278 0-.666-.23-.666-.659 0-.48.718-1.939 2.331-2.372l.19-.047-.022.188Z" fill="#D1FE17"></path></svg>
+                  <span id="hf-model-name">Omni 1.2 Flash</span>
+                </div>
+
+                <select id="select-resolution" class="hf-chip-select" title="Resolution">
+                  <option value="720p">720p</option>
+                  <option value="1080p" selected>1080p</option>
+                  <option value="2k">2K</option>
+                  <option value="4k">4K</option>
+                </select>
+
+                <select id="select-aspect" class="hf-chip-select" title="Aspect Ratio">
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                  <option value="1:1">1:1</option>
+                  <option value="4:3">4:3</option>
+                  <option value="3:4">3:4</option>
+                  <option value="2.39:1">2.39:1</option>
+                </select>
+
+                <div id="control-duration" class="hf-chip-wrap">
+                  <select id="select-duration" class="hf-chip-select" title="Duration">
+                    <option value="5s" selected>5s</option>
+                    <option value="8s">8s</option>
+                    <option value="12s">12s</option>
+                    <option value="15s">15s</option>
+                  </select>
+                </div>
+
+                <div id="control-intensity" class="hf-chip-wrap">
+                  <select id="select-intensity" class="hf-chip-select" title="Motion Intensity">
+                    <option value="subtle">Subtle</option>
+                    <option value="cinematic" selected>Cinema</option>
+                    <option value="aggressive">Fast</option>
+                  </select>
+                </div>
+
+                <select id="select-batch" class="hf-chip-select" title="Batch Count">
+                  <option value="1" selected>x1</option>
+                  <option value="2">x2</option>
+                  <option value="3">x3</option>
+                  <option value="4">x4</option>
+                </select>
+
+                <label id="toggle-audio-wrap" class="hf-chip-toggle" title="Native Audio Cue">
+                  <input type="checkbox" id="chk-audio" checked />
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M19.25 4.75a10.25 10.25 0 0 1 0 14.5M15.89 8.11a5.5 5.5 0 0 1 0 7.78M2.75 7.75h2.96c.19 0 .38-.05.54-.16L12.25 3.75v16.5l-6-3.84a1 1 0 0 0-.54-.16H2.75a1 1 0 0 1-1-1V8.75a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  <span id="audio-state-label">On</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 3D Acid-Lime GENERATE / INJECT CTA -->
+            <button id="btn-inject" class="hf-generate-btn" type="button" title="Inject prompt to active tab (Ctrl+Enter)">
+              <span class="hf-glow-orb" aria-hidden="true"></span>
+              <span class="hf-gen-top">INJECT</span>
+              <span class="hf-gen-sub">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="m11.852 4.217-.13-.978a.476.476 0 0 0-.943 0l-.13.978A6.41 6.41 0 0 1 5.14 9.724l-.978.13a.476.476 0 0 0 0 .943l.978.13a6.41 6.41 0 0 1 5.507 5.508l.13.978a.476.476 0 0 0 .944 0l.13-.978a6.41 6.41 0 0 1 5.508-5.507l.977-.13a.476.476 0 0 0 0-.944l-.977-.13a6.41 6.41 0 0 1-5.508-5.507Zm-7.2 10.54.169-.549a.188.188 0 0 1 .36 0l.168.549a2.222 2.222 0 0 0 1.47 1.47l.549.169a.188.188 0 0 1 0 .36l-.549.168a2.222 2.222 0 0 0-1.47 1.47l-.169.549a.188.188 0 0 1-.36 0l-.168-.548a2.222 2.222 0 0 0-1.47-1.47l-.549-.17a.188.188 0 0 1 0-.36l.548-.168a2.222 2.222 0 0 0 1.47-1.47Z" fill="currentColor"></path></svg>
+                <span id="btn-inject-label">Flow</span>
+              </span>
+            </button>
+          </div>
+
+          <!-- Quick Toggles Bar -->
+          <div class="hf-dock-flags">
+            <label class="toggle-chip">
+              <input type="checkbox" id="chk-autosubmit" />
+              <span>Auto-Click Generate</span>
+            </label>
+            <label class="toggle-chip" id="toggle-autosync-wrap">
+              <input type="checkbox" id="chk-autosync" />
+              <span>Sync Flow Settings</span>
+            </label>
+            <button id="btn-copy" class="hf-mini-action" type="button" title="Copy prompt (Ctrl+Shift+C)">Copy</button>
+            <button id="btn-save-shot" class="hf-mini-action accent" type="button">+ Shot</button>
+          </div>
+        </section>
+
+        <!-- Studio Specific Panels (Lipsync, Motion Control, Short Drama) -->
+        <section id="lipsync-panel" class="panel-section studio-card hidden">
+          <div class="section-header">
+            <h2>Lipsync Studio (Omni 1.2 Flash)</h2>
+            <span class="meta-badge">Audio-Sync</span>
+          </div>
+          <div class="form-row">
+            <label for="lipsync-dialogue">Spoken Dialogue / Script</label>
+            <textarea id="lipsync-dialogue" rows="2" placeholder="Exact dialogue line (e.g., 'Selamat malam, ini baru permulaan.')..."></textarea>
+          </div>
+          <div class="controls-grid">
+            <div class="control-item"><label for="select-lipsync-emotion">Emotion</label><select id="select-lipsync-emotion"></select></div>
+            <div class="control-item"><label for="select-lipsync-framing">Framing</label><select id="select-lipsync-framing"></select></div>
+            <div class="control-item"><label for="select-lipsync-voice">Voice &amp; Accent</label><select id="select-lipsync-voice"></select></div>
+            <div class="control-item"><label for="lipsync-ambience">Ambience</label><input id="lipsync-ambience" type="text" class="compact-input" placeholder="e.g., soft rain outside" /></div>
+          </div>
+        </section>
+
+        <section id="motion-control-panel" class="panel-section studio-card hidden">
+          <div class="section-header">
+            <h2>Motion Control Transfer</h2>
+            <span class="meta-badge">Ref Video</span>
+          </div>
+          <div class="form-row">
+            <label for="input-motion-video">Reference Motion Video (Optional Local Preview)</label>
+            <div class="inline-row">
+              <label for="input-motion-video" class="btn-secondary compact-btn file-label">Load .mp4/.webm</label>
+              <input id="input-motion-video" type="file" accept="video/*" class="hidden" />
+              <span id="motion-video-meta" class="meta-badge">No video loaded</span>
+            </div>
+            <video id="motion-video-preview" class="motion-ref-video hidden" controls muted playsinline></video>
+          </div>
+          <div class="form-row">
+            <label for="motion-ref-desc">Choreography / Motion to Copy</label>
+            <textarea id="motion-ref-desc" rows="2" placeholder="Describe body movement from reference video..."></textarea>
+          </div>
+          <div class="controls-grid">
+            <div class="control-item"><label for="select-motion-mode">Scene Control</label><select id="select-motion-mode"></select></div>
+            <div class="control-item"><label for="select-motion-cam">Camera Sync</label><select id="select-motion-cam"></select></div>
+          </div>
+        </section>
+
+        <section id="drama-panel" class="panel-section studio-card hidden">
+          <div class="section-header">
+            <h2>Short Drama Storyboard Builder</h2>
+            <span class="meta-badge">Multi-Shot</span>
+          </div>
+          <div class="form-row">
+            <label for="drama-premise">Story Premise / Scene Beat</label>
+            <textarea id="drama-premise" rows="2" placeholder="e.g., 'Two rivals meet on a foggy Jakarta rooftop during midnight rain'..."></textarea>
+          </div>
+          <div class="controls-grid">
+            <div class="control-item"><label for="drama-cast">Cast / @Characters</label><input id="drama-cast" type="text" class="compact-input" placeholder="@aria_noir, @kenji" /></div>
+            <div class="control-item">
+              <label for="select-drama-shots">Shot Count</label>
+              <select id="select-drama-shots">
+                <option value="3">3 Shots + Keyframe</option>
+                <option value="4" selected>4 Shots + Keyframe</option>
+                <option value="6">6 Shots + Keyframe</option>
+                <option value="8">8 Shots + Keyframe</option>
+              </select>
+            </div>
+          </div>
+          <button id="btn-generate-drama" type="button" class="hf-generate-btn compact-full">Generate Full Short Drama Storyboard</button>
+        </section>
+
+        <!-- Higgsfield Popover / Creative Controls Stage (Movement / Soul / Film / Camera / Palette / Lighting / References) -->
+        <section id="popover-stage" class="hf-popover-card">
+          <!-- Sub-panel: Camera Setup & Optics + Color Palettes + Lighting + Film Setup + References -->
+          <div id="subpanel-references" class="hf-subpanel hidden">
+            <div class="section-header">
+              <h2>References &amp; Color Transfer</h2>
+              <button class="text-btn close-subpanel" type="button">Done</button>
+            </div>
+            <div class="inline-row">
+              <label for="input-ref-image" class="btn-secondary compact-btn file-label">Load Ref Image</label>
+              <input id="input-ref-image" type="file" accept="image/*" class="hidden" />
+              <button id="btn-send-ref-image" class="pill-btn hidden" type="button">Send Ref to Flow</button>
+              <button id="btn-clear-ref-image" class="text-btn danger hidden" type="button">Clear</button>
+            </div>
+            <div id="ct-preview-wrap" class="ct-preview-wrap hidden">
+              <img id="ct-thumb" class="ct-thumb" alt="Color transfer reference" />
+              <div class="ct-info">
+                <div id="ct-swatches" class="ct-swatches"></div>
+                <div id="ct-summary" class="ct-summary"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="subpanel-film" class="hf-subpanel hidden">
+            <div class="section-header">
+              <h2>Film Setup (Genre &amp; Era)</h2>
+              <button class="text-btn close-subpanel" type="button">Done</button>
+            </div>
+            <div class="controls-grid">
+              <div class="control-item"><label for="select-genre">Film Genre</label><select id="select-genre"></select></div>
+              <div class="control-item"><label for="select-era">Film Era</label><select id="select-era"></select></div>
+            </div>
+          </div>
+
+          <div id="subpanel-optics" class="hf-subpanel hidden">
+            <div class="section-header">
+              <h2>Camera Setup (Body, Lens &amp; Aperture)</h2>
+              <div class="section-tools">
+                <button id="btn-reset-optics" class="text-btn" type="button">Reset</button>
+                <button class="text-btn close-subpanel" type="button">Done</button>
+              </div>
+            </div>
+            <div class="controls-grid">
+              <div class="control-item"><label for="select-camera">Camera Body</label><select id="select-camera"></select></div>
+              <div class="control-item"><label for="select-lens">Lens Glass</label><select id="select-lens"></select></div>
+              <div class="control-item"><label for="select-aperture">Aperture</label><select id="select-aperture"></select></div>
+            </div>
+          </div>
+
+          <div id="subpanel-palette" class="hf-subpanel hidden">
+            <div class="section-header">
+              <h2>Color Palette (20 Cinema Grades)</h2>
+              <button class="text-btn close-subpanel" type="button">Done</button>
+            </div>
+            <select id="select-palette" class="hidden-sync-select"></select>
+            <div id="palette-visual-grid" class="hf-visual-grid"></div>
+          </div>
+
+          <div id="subpanel-lighting" class="hf-subpanel hidden">
+            <div class="section-header">
+              <h2>Lighting Continuity</h2>
+              <button class="text-btn close-subpanel" type="button">Done</button>
+            </div>
+            <select id="select-lighting" class="hidden-sync-select"></select>
+            <div id="lighting-visual-grid" class="hf-visual-grid"></div>
+          </div>
+
+          <!-- Primary Preset Grid Section (Camera Movements 35 / Keyframe & Soul 113) -->
+          <div id="preset-library-section">
+            <div class="section-header">
+              <h2 id="preset-heading">Camera Movement (35)</h2>
+              <div class="section-tools">
+                <button id="btn-toggle-sequence" class="mini-toggle hidden" type="button" title="Chain up to 3 camera moves in order">
+                  Multi-Move: OFF
+                </button>
+                <span id="preset-count" class="meta-badge">35 presets</span>
+              </div>
+            </div>
+
+            <div class="filter-toolbar">
+              <input
+                id="preset-search"
+                type="search"
+                class="search-input"
+                placeholder="Search movements or Soul looks (e.g., snorricam, orbit, fisheye, 90s)..."
+              />
+              <div id="category-pills" class="category-pills" role="group" aria-label="Preset categories"></div>
+            </div>
+
+            <div id="sequence-bar" class="sequence-bar hidden">
+              <div class="sequence-head">
+                <span>Ordered Camera Chain (max 3):</span>
+                <button id="btn-clear-sequence" class="text-btn" type="button">Reset</button>
+              </div>
+              <div id="sequence-chips" class="sequence-chips"></div>
+            </div>
+
+            <div id="preset-grid" class="preset-grid"></div>
+          </div>
+        </section>
+
+        <!-- Live Compiled Director Prompt -->
+        <section class="panel-section hf-compiled-card">
+          <div class="section-header">
+            <h2>Compiled Director Prompt</h2>
+            <div class="section-tools">
+              <button id="btn-reset-compiled" class="text-btn hidden" type="button">Recompile</button>
+              <span class="meta-badge" id="char-count">0 chars</span>
+            </div>
+          </div>
+          <textarea id="compiled-preview" class="compiled-box" rows="5"></textarea>
+        </section>
+      </main>
     </div>
 
-    <!-- 5-Mode Higgsfield Studio Switcher -->
-    <nav class="studio-nav" role="tablist" aria-label="Studio Modes">
-      <div class="stage-tabs">
-        <button class="stage-tab active" data-stage="stage2" role="tab" aria-selected="true" type="button">
-          <span class="stage-kicker">STAGE 2 • VIDEO</span>
-          <span class="stage-name">Motion (35)</span>
-        </button>
-        <button class="stage-tab" data-stage="stage1" role="tab" aria-selected="false" type="button">
-          <span class="stage-kicker">STAGE 1 • SOUL</span>
-          <span class="stage-name">Keyframe (113)</span>
-        </button>
-      </div>
-      <div class="studio-subtabs">
-        <button class="sub-tab" data-stage="lipsync" role="tab" aria-selected="false" type="button">Lipsync Studio</button>
-        <button class="sub-tab" data-stage="motion_control" role="tab" aria-selected="false" type="button">Motion Control</button>
-        <button class="sub-tab" data-stage="drama" role="tab" aria-selected="false" type="button">Short Drama</button>
-      </div>
-    </nav>
-
-    <!-- Main Scrollable Studio Workspace -->
-    <main class="workspace">
-      <!-- Preset Library (Stage 1 & Stage 2) -->
-      <section id="preset-library-section" class="panel-section">
-        <div class="section-header">
-          <h2 id="preset-heading">Camera Motion Presets</h2>
-          <div class="section-tools">
-            <button id="btn-toggle-sequence" class="mini-toggle hidden" type="button" title="Chain up to 3 camera moves in order">
-              Multi-Move: OFF
-            </button>
-            <span id="preset-count" class="meta-badge">35 presets</span>
-          </div>
-        </div>
-
-        <div class="filter-toolbar">
-          <input
-            id="preset-search"
-            type="search"
-            class="search-input"
-            placeholder="Filter presets (e.g., orbit, soul, fisheye, tilt, 35mm)..."
-          />
-          <div id="category-pills" class="category-pills" role="group" aria-label="Preset categories"></div>
-        </div>
-
-        <div id="sequence-bar" class="sequence-bar hidden">
-          <div class="sequence-head">
-            <span>Ordered Camera Chain (max 3):</span>
-            <button id="btn-clear-sequence" class="text-btn" type="button">Reset</button>
-          </div>
-          <div id="sequence-chips" class="sequence-chips"></div>
-        </div>
-
-        <div id="preset-grid" class="preset-grid"></div>
-      </section>
-
-      <!-- Lipsync Studio Panel -->
-      <section id="lipsync-panel" class="panel-section studio-card hidden">
-        <div class="section-header">
-          <h2>Lipsync Studio (Omni 1.2 Flash)</h2>
-          <span class="meta-badge">Audio-Sync</span>
-        </div>
-        <div class="form-row">
-          <label for="lipsync-dialogue">Spoken Dialogue / Script</label>
-          <textarea
-            id="lipsync-dialogue"
-            rows="2"
-            placeholder="Exact dialogue line (e.g., 'Selamat malam, ini baru permulaan.')..."
-          ></textarea>
-        </div>
-        <div class="controls-grid">
-          <div class="control-item">
-            <label for="select-lipsync-emotion">Emotion</label>
-            <select id="select-lipsync-emotion"></select>
-          </div>
-          <div class="control-item">
-            <label for="select-lipsync-framing">Framing</label>
-            <select id="select-lipsync-framing"></select>
-          </div>
-          <div class="control-item">
-            <label for="select-lipsync-voice">Voice &amp; Accent</label>
-            <select id="select-lipsync-voice"></select>
-          </div>
-          <div class="control-item">
-            <label for="lipsync-ambience">Ambience</label>
-            <input id="lipsync-ambience" type="text" class="compact-input" placeholder="e.g., soft rain outside" />
-          </div>
-        </div>
-      </section>
-
-      <!-- Motion Control Studio Panel -->
-      <section id="motion-control-panel" class="panel-section studio-card hidden">
-        <div class="section-header">
-          <h2>Motion Control Transfer</h2>
-          <span class="meta-badge">Ref Video</span>
-        </div>
-        <div class="form-row">
-          <label for="input-motion-video">Reference Motion Video (Optional Local Preview)</label>
-          <div class="inline-row">
-            <label for="input-motion-video" class="btn-secondary compact-btn file-label">Load .mp4/.webm</label>
-            <input id="input-motion-video" type="file" accept="video/*" class="hidden" />
-            <span id="motion-video-meta" class="meta-badge">No video loaded</span>
-          </div>
-          <video id="motion-video-preview" class="motion-ref-video hidden" controls muted playsinline></video>
-        </div>
-        <div class="form-row">
-          <label for="motion-ref-desc">Choreography / Motion to Copy</label>
-          <textarea
-            id="motion-ref-desc"
-            rows="2"
-            placeholder="Describe body movement from reference video (e.g., 'Subject walks forward, spins jacket, looks sharply at camera')..."
-          ></textarea>
-        </div>
-        <div class="controls-grid">
-          <div class="control-item">
-            <label for="select-motion-mode">Scene Control</label>
-            <select id="select-motion-mode"></select>
-          </div>
-          <div class="control-item">
-            <label for="select-motion-cam">Camera Sync</label>
-            <select id="select-motion-cam"></select>
-          </div>
-        </div>
-      </section>
-
-      <!-- Short Drama Multi-Shot Generator Panel -->
-      <section id="drama-panel" class="panel-section studio-card hidden">
-        <div class="section-header">
-          <h2>Short Drama Storyboard Builder</h2>
-          <span class="meta-badge">Multi-Shot</span>
-        </div>
-        <div class="form-row">
-          <label for="drama-premise">Story Premise / Scene Beat</label>
-          <textarea
-            id="drama-premise"
-            rows="2"
-            placeholder="e.g., 'Two rivals meet on a foggy Jakarta rooftop during midnight rain to exchange a drive'..."
-          ></textarea>
-        </div>
-        <div class="controls-grid">
-          <div class="control-item">
-            <label for="drama-cast">Cast / @Characters</label>
-            <input id="drama-cast" type="text" class="compact-input" placeholder="@aria_noir, @kenji" />
-          </div>
-          <div class="control-item">
-            <label for="select-drama-shots">Shot Count</label>
-            <select id="select-drama-shots">
-              <option value="3">3 Shots + Keyframe</option>
-              <option value="4" selected>4 Shots + Keyframe</option>
-              <option value="6">6 Shots + Keyframe</option>
-              <option value="8">8 Shots + Keyframe</option>
-            </select>
-          </div>
-        </div>
-        <button id="btn-generate-drama" type="button" class="btn-primary full-width">
-          Generate Full Short Drama Storyboard
-        </button>
-      </section>
-
-      <!-- Scene / Subject Input + @Element Lock -->
-      <section id="subject-section" class="panel-section">
-        <div class="section-header">
-          <label for="subject-input">Scene &amp; Subject Direction</label>
-          <button id="btn-clear-input" class="text-btn" type="button">Clear</button>
-        </div>
-        <textarea
-          id="subject-input"
-          rows="2"
-          placeholder="Describe subject action or scene..."
-        ></textarea>
-        <div class="element-row">
-          <label for="character-lock" class="sr-only">Character / @Element Lock</label>
-          <input
-            id="character-lock"
-            type="text"
-            class="compact-input"
-            placeholder="@Character / Element lock (optional, e.g., '@mina_soul, silver watch')"
-          />
-        </div>
-      </section>
-
-      <!-- Color Transfer & Reference Image Bridge -->
-      <details id="color-transfer-panel" class="panel-section accordion">
-        <summary class="accordion-summary">
-          <span>Color Transfer &amp; Ref Image Bridge</span>
-          <span id="ct-badge" class="meta-badge">None</span>
-        </summary>
-        <div class="accordion-body">
-          <div class="inline-row">
-            <label for="input-ref-image" class="btn-secondary compact-btn file-label">Load Ref Image</label>
-            <input id="input-ref-image" type="file" accept="image/*" class="hidden" />
-            <button id="btn-send-ref-image" class="pill-btn hidden" type="button">Send Ref to Flow</button>
-            <button id="btn-clear-ref-image" class="text-btn danger hidden" type="button">Clear</button>
-          </div>
-          <div id="ct-preview-wrap" class="ct-preview-wrap hidden">
-            <img id="ct-thumb" class="ct-thumb" alt="Color transfer reference" />
-            <div class="ct-info">
-              <div id="ct-swatches" class="ct-swatches"></div>
-              <div id="ct-summary" class="ct-summary"></div>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <!-- Fine-Tuning Controls -->
-      <section class="panel-section controls-grid">
-        <div class="control-item" id="control-intensity">
-          <label for="select-intensity">Motion Intensity</label>
-          <select id="select-intensity">
-            <option value="subtle">Subtle</option>
-            <option value="cinematic" selected>Cinematic</option>
-            <option value="aggressive">Aggressive</option>
-          </select>
-        </div>
-
-        <div class="control-item" id="control-aspect">
-          <label for="select-aspect">Aspect Ratio</label>
-          <select id="select-aspect">
-            <option value="16:9">16:9 Cinema</option>
-            <option value="9:16">9:16 Reels / Shorts</option>
-            <option value="1:1">1:1 Square</option>
-            <option value="4:3">4:3 Classic</option>
-            <option value="3:4">3:4 Portrait</option>
-            <option value="2.39:1">2.39:1 Anamorphic</option>
-          </select>
-        </div>
-
-        <div class="control-item" id="control-lighting">
-          <label for="select-lighting">Lighting Continuity</label>
-          <select id="select-lighting"></select>
-        </div>
-
-        <div class="control-item" id="control-duration">
-          <label for="select-duration">Target Duration</label>
-          <select id="select-duration">
-            <option value="5s" selected>5 Seconds</option>
-            <option value="8s">8 Seconds</option>
-            <option value="12s">12 Seconds</option>
-            <option value="15s">15 Seconds (Max)</option>
-          </select>
-        </div>
-
-        <div class="control-item" id="control-resolution">
-          <label for="select-resolution">Resolution</label>
-          <select id="select-resolution">
-            <option value="720p">720p HD</option>
-            <option value="1080p" selected>1080p Cinema</option>
-            <option value="2k">2K Keyframe</option>
-            <option value="4k">4K Master</option>
-          </select>
-        </div>
-
-        <div class="control-item" id="control-batch">
-          <label for="select-batch">Flow Batch</label>
-          <select id="select-batch">
-            <option value="1" selected>x1 Variation</option>
-            <option value="2">x2 Variations</option>
-            <option value="3">x3 Variations</option>
-            <option value="4">x4 Variations</option>
-          </select>
-        </div>
-      </section>
-
-      <!-- Collapsible Pro Optics & Film Setup (Cinema Studio 4.0) -->
-      <details id="optics-panel" class="panel-section accordion">
-        <summary class="accordion-summary">
-          <span>Pro Optics, Film &amp; 20 Palettes</span>
-          <span id="optics-summary-badge" class="meta-badge">Auto</span>
-        </summary>
-        <div class="accordion-body">
-          <div class="controls-grid">
-            <div class="control-item">
-              <label for="select-camera">Camera Body</label>
-              <select id="select-camera"></select>
-            </div>
-            <div class="control-item">
-              <label for="select-lens">Lens Glass</label>
-              <select id="select-lens"></select>
-            </div>
-            <div class="control-item">
-              <label for="select-aperture">Aperture</label>
-              <select id="select-aperture"></select>
-            </div>
-            <div class="control-item">
-              <label for="select-palette">Color Palette (20)</label>
-              <select id="select-palette"></select>
-            </div>
-            <div class="control-item">
-              <label for="select-genre">Film Genre</label>
-              <select id="select-genre"></select>
-            </div>
-            <div class="control-item">
-              <label for="select-era">Film Era</label>
-              <select id="select-era"></select>
-            </div>
-          </div>
-          <div id="palette-swatch-bar" class="ct-swatches"></div>
-          <div class="accordion-footer">
-            <button id="btn-reset-optics" class="text-btn" type="button">Reset Optics to Auto</button>
-          </div>
-        </div>
-      </details>
-
-      <!-- Toggles -->
-      <section class="panel-section toggles-row">
-        <label class="toggle-chip" id="toggle-audio-wrap">
-          <input type="checkbox" id="chk-audio" checked />
-          <span>Native Audio Cue</span>
-        </label>
-        <label class="toggle-chip">
-          <input type="checkbox" id="chk-autosubmit" />
-          <span>Auto-Click Generate</span>
-        </label>
-        <label class="toggle-chip" id="toggle-autosync-wrap">
-          <input type="checkbox" id="chk-autosync" />
-          <span>Sync Flow Settings</span>
-        </label>
-      </section>
-
-      <!-- Live Compiled Prompt Preview -->
-      <section class="panel-section">
-        <div class="section-header">
-          <h2>Compiled Director Prompt</h2>
-          <div class="section-tools">
-            <button id="btn-save-shot" class="text-btn accent-link" type="button">+ Save Shot</button>
-            <button id="btn-reset-compiled" class="text-btn hidden" type="button">Recompile</button>
-            <span class="meta-badge" id="char-count">0 chars</span>
-          </div>
-        </div>
-        <textarea id="compiled-preview" class="compiled-box" rows="6"></textarea>
-      </section>
-    </main>
-
-    <!-- Sticky Action Footer -->
-    <footer class="action-footer">
-      <button id="btn-copy" class="btn-secondary" type="button" title="Copy prompt (Ctrl+Shift+C)">Copy</button>
-      <button id="btn-inject" class="btn-primary" type="button" title="Inject prompt to active tab (Ctrl+Enter)">
-        <span id="btn-inject-label">Inject to Google Flow</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
-      </button>
-    </footer>
-
-    <!-- History Drawer -->
+    <!-- Drawers (History, Storyboard, Editing Room, Custom Preset Builder) -->
     <aside id="history-drawer" class="drawer hidden" aria-label="Recent Generations">
       <div class="drawer-header">
         <h3>Recent Generations</h3>
@@ -405,7 +529,6 @@
       <div id="history-list" class="history-list"></div>
     </aside>
 
-    <!-- Storyboard / Shot List Drawer -->
     <aside id="storyboard-drawer" class="drawer hidden" aria-label="Storyboard Shot List">
       <div class="drawer-header">
         <h3>Storyboard Shot List</h3>
@@ -418,7 +541,6 @@
       <div id="storyboard-list" class="history-list"></div>
     </aside>
 
-    <!-- Editing Room Drawer -->
     <aside id="editing-drawer" class="drawer hidden" aria-label="Editing Room">
       <div class="drawer-header">
         <h3>Editing Room <span id="edit-clip-count" class="meta-badge">0 clips</span></h3>
@@ -439,7 +561,6 @@
       </div>
     </aside>
 
-    <!-- Custom Preset Builder Drawer -->
     <aside id="custom-preset-drawer" class="drawer hidden" aria-label="Custom Preset Builder">
       <div class="drawer-header">
         <h3 id="custom-drawer-title">Custom Preset Builder</h3>
@@ -457,14 +578,8 @@
             </select>
           </div>
           <div class="controls-grid">
-            <div class="form-row">
-              <label for="cp-name">Preset Name *</label>
-              <input id="cp-name" type="text" class="compact-input" placeholder="e.g., Tokyo Drift Whip" required />
-            </div>
-            <div class="form-row">
-              <label for="cp-badge">Badge (max 12)</label>
-              <input id="cp-badge" type="text" class="compact-input" placeholder="CUSTOM" maxlength="12" />
-            </div>
+            <div class="form-row"><label for="cp-name">Preset Name *</label><input id="cp-name" type="text" class="compact-input" placeholder="e.g., Tokyo Drift Whip" required /></div>
+            <div class="form-row"><label for="cp-badge">Badge (max 12)</label><input id="cp-badge" type="text" class="compact-input" placeholder="CUSTOM" maxlength="12" /></div>
           </div>
 
           <div id="cp-stage2-fields" class="custom-stage-fields">
@@ -472,37 +587,17 @@
               <div class="form-row">
                 <label for="cp-s2-category">Category</label>
                 <select id="cp-s2-category">
-                  <option value="Dynamic">Dynamic</option>
-                  <option value="Orbit">Orbit</option>
-                  <option value="Aerial">Aerial</option>
-                  <option value="Tracking">Tracking</option>
-                  <option value="Classic">Classic</option>
-                  <option value="Optical">Optical</option>
-                  <option value="Handheld">Handheld</option>
+                  <option value="Dynamic">Dynamic</option><option value="Orbit">Orbit</option><option value="Aerial">Aerial</option><option value="Tracking">Tracking</option><option value="Classic">Classic</option><option value="Optical">Optical</option><option value="Handheld">Handheld</option>
                 </select>
               </div>
               <div class="form-row">
                 <label for="cp-s2-duration">Default Duration</label>
-                <select id="cp-s2-duration">
-                  <option value="5s">5s</option>
-                  <option value="8s">8s</option>
-                  <option value="12s">12s</option>
-                  <option value="15s">15s</option>
-                </select>
+                <select id="cp-s2-duration"><option value="5s">5s</option><option value="8s">8s</option><option value="12s">12s</option><option value="15s">15s</option></select>
               </div>
             </div>
-            <div class="form-row">
-              <label for="cp-s2-trajectory">Camera Trajectory *</label>
-              <textarea id="cp-s2-trajectory" rows="3" placeholder="Describe camera path, angle, and pacing..."></textarea>
-            </div>
-            <div class="form-row">
-              <label for="cp-s2-physics">Physics &amp; Optics Notes</label>
-              <input id="cp-s2-physics" type="text" class="compact-input" placeholder="e.g., Strong foreground parallax, crisp shutter blur..." />
-            </div>
-            <div class="form-row">
-              <label for="cp-s2-audio">Native Audio Cue</label>
-              <input id="cp-s2-audio" type="text" class="compact-input" placeholder="e.g., Deep tire screech fading into neon rain..." />
-            </div>
+            <div class="form-row"><label for="cp-s2-trajectory">Camera Trajectory *</label><textarea id="cp-s2-trajectory" rows="3" placeholder="Describe camera path, angle, and pacing..."></textarea></div>
+            <div class="form-row"><label for="cp-s2-physics">Physics &amp; Optics Notes</label><input id="cp-s2-physics" type="text" class="compact-input" placeholder="e.g., Strong foreground parallax..." /></div>
+            <div class="form-row"><label for="cp-s2-audio">Native Audio Cue</label><input id="cp-s2-audio" type="text" class="compact-input" placeholder="e.g., Deep tire screech..." /></div>
           </div>
 
           <div id="cp-stage1-fields" class="custom-stage-fields hidden">
@@ -510,36 +605,17 @@
               <div class="form-row">
                 <label for="cp-s1-category">Category</label>
                 <select id="cp-s1-category">
-                  <option value="Cinema">Cinema</option>
-                  <option value="TikTok Core">TikTok Core</option>
-                  <option value="Instagram Aesthetics">Instagram Aesthetics</option>
-                  <option value="Camera Presets">Camera Presets</option>
-                  <option value="Beauty">Beauty</option>
-                  <option value="Mood">Mood</option>
-                  <option value="Surreal">Surreal</option>
-                  <option value="Graphic Art">Graphic Art</option>
+                  <option value="Cinema">Cinema</option><option value="TikTok Core">TikTok Core</option><option value="Instagram Aesthetics">Instagram Aesthetics</option><option value="Camera Presets">Camera Presets</option><option value="Beauty">Beauty</option><option value="Mood">Mood</option><option value="Surreal">Surreal</option><option value="Graphic Art">Graphic Art</option>
                 </select>
               </div>
-              <div class="form-row">
-                <label for="cp-s1-tag">Style Tag</label>
-                <input id="cp-s1-tag" type="text" class="compact-input" placeholder="e.g., Film / Lookbook" />
-              </div>
+              <div class="form-row"><label for="cp-s1-tag">Style Tag</label><input id="cp-s1-tag" type="text" class="compact-input" placeholder="e.g., Film / Lookbook" /></div>
             </div>
-            <div class="form-row">
-              <label for="cp-s1-lens">Camera &amp; Lens Spec *</label>
-              <textarea id="cp-s1-lens" rows="2" placeholder="e.g., 50mm Cooke Panchro prime at f/2.0, subtle halation..."></textarea>
-            </div>
-            <div class="form-row">
-              <label for="cp-s1-lighting">Lighting Spec</label>
-              <input id="cp-s1-lighting" type="text" class="compact-input" placeholder="e.g., Soft tungsten rim against cool dusk fill..." />
-            </div>
-            <div class="form-row">
-              <label for="cp-s1-soul">Identity / Soul Lock Rule</label>
-              <input id="cp-s1-soul" type="text" class="compact-input" placeholder="Preserve exact face, hair, and outfit..." />
-            </div>
+            <div class="form-row"><label for="cp-s1-lens">Camera &amp; Lens Spec *</label><textarea id="cp-s1-lens" rows="2" placeholder="e.g., 50mm Cooke Panchro prime at f/2.0..."></textarea></div>
+            <div class="form-row"><label for="cp-s1-lighting">Lighting Spec</label><input id="cp-s1-lighting" type="text" class="compact-input" placeholder="e.g., Soft tungsten rim..." /></div>
+            <div class="form-row"><label for="cp-s1-soul">Identity / Soul Lock Rule</label><input id="cp-s1-soul" type="text" class="compact-input" placeholder="Preserve exact face, hair, and outfit..." /></div>
           </div>
 
-          <button type="submit" class="btn-primary full-width">Save Custom Preset</button>
+          <button type="submit" class="hf-generate-btn compact-full">Save Custom Preset</button>
         </form>
 
         <div class="pack-io-box">

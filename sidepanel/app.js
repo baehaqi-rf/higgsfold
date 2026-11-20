@@ -38,6 +38,7 @@ const STORAGE_KEYS = {
 
 const state = {
   stage: "stage2", // 'stage2' | 'stage1' | 'lipsync' | 'motion_control' | 'drama'
+  activePopover: null, // 'references' | 'film' | 'camera' | 'palette' | 'lighting' | null
   selectedStage1Id: STAGE1_PRESETS[0].id,
   selectedStage2Id: STAGE2_PRESETS[0].id,
   stage2Queue: [STAGE2_PRESETS[0].id],
@@ -82,7 +83,23 @@ const state = {
 
 const el = {
   modeBtns: document.querySelectorAll(".stage-tab, .sub-tab"),
+  sideNavBtns: document.querySelectorAll("[data-side-nav]"),
+  stripPills: document.querySelectorAll("[data-popover]"),
+  subpanelRefs: document.getElementById("subpanel-references"),
+  subpanelFilm: document.getElementById("subpanel-film"),
+  subpanelOptics: document.getElementById("subpanel-optics"),
+  subpanelPalette: document.getElementById("subpanel-palette"),
+  subpanelLighting: document.getElementById("subpanel-lighting"),
+  closeSubpanelBtns: document.querySelectorAll(".close-subpanel"),
+  valReferences: document.getElementById("val-references"),
+  valFilm: document.getElementById("val-film"),
+  valCamera: document.getElementById("val-camera"),
+  valPalette: document.getElementById("val-palette"),
+  valLighting: document.getElementById("val-lighting"),
+  hfModelName: document.getElementById("hf-model-name"),
+  audioStateLabel: document.getElementById("audio-state-label"),
   presetLibrarySection: document.getElementById("preset-library-section"),
+  popoverStage: document.getElementById("popover-stage"),
   lipsyncPanel: document.getElementById("lipsync-panel"),
   motionControlPanel: document.getElementById("motion-control-panel"),
   dramaPanel: document.getElementById("drama-panel"),
@@ -96,6 +113,8 @@ const el = {
   sequenceChips: document.getElementById("sequence-chips"),
   btnClearSequence: document.getElementById("btn-clear-sequence"),
   presetGrid: document.getElementById("preset-grid"),
+  paletteVisualGrid: document.getElementById("palette-visual-grid"),
+  lightingVisualGrid: document.getElementById("lighting-visual-grid"),
   subjectInput: document.getElementById("subject-input"),
   characterLock: document.getElementById("character-lock"),
   btnClearInput: document.getElementById("btn-clear-input"),
@@ -121,7 +140,6 @@ const el = {
   inputRefImage: document.getElementById("input-ref-image"),
   btnSendRefImage: document.getElementById("btn-send-ref-image"),
   btnClearRefImage: document.getElementById("btn-clear-ref-image"),
-  ctBadge: document.getElementById("ct-badge"),
   ctPreviewWrap: document.getElementById("ct-preview-wrap"),
   ctThumb: document.getElementById("ct-thumb"),
   ctSwatches: document.getElementById("ct-swatches"),
@@ -139,8 +157,6 @@ const el = {
   selectPalette: document.getElementById("select-palette"),
   selectGenre: document.getElementById("select-genre"),
   selectEra: document.getElementById("select-era"),
-  paletteSwatchBar: document.getElementById("palette-swatch-bar"),
-  opticsSummaryBadge: document.getElementById("optics-summary-badge"),
   btnResetOptics: document.getElementById("btn-reset-optics"),
   controlIntensity: document.getElementById("control-intensity"),
   controlDuration: document.getElementById("control-duration"),
@@ -161,7 +177,8 @@ const el = {
   statusText: document.getElementById("status-text"),
   btnSyncFlow: document.getElementById("btn-sync-flow"),
   btnOpenFlow: document.getElementById("btn-open-flow"),
-  // Drawers
+  btnExpandStudio: document.getElementById("btn-expand-studio"),
+  // Drawers & Sidebar links
   btnHistory: document.getElementById("btn-history"),
   btnCloseHistory: document.getElementById("btn-close-history"),
   btnClearHistory: document.getElementById("btn-clear-history"),
@@ -193,6 +210,10 @@ const el = {
   cpStage2Fields: document.getElementById("cp-stage2-fields"),
   btnExportPresets: document.getElementById("btn-export-presets"),
   inputImportPresets: document.getElementById("input-import-presets"),
+  btnSideStoryboard: document.getElementById("btn-side-storyboard"),
+  btnSideEditing: document.getElementById("btn-side-editing"),
+  btnSideCustom: document.getElementById("btn-side-custom"),
+  btnSideHistory: document.getElementById("btn-side-history"),
   // Picker & Toast
   btnPicker: document.getElementById("btn-picker"),
   pickerBanner: document.getElementById("picker-banner"),
@@ -233,42 +254,136 @@ function getStage2All() {
   return [...state.customPresets.stage2, ...STAGE2_PRESETS];
 }
 
-function renderPaletteSwatches() {
-  const pal = COLOR_PALETTES.find((p) => p.id === state.palette);
-  el.paletteSwatchBar.innerHTML = "";
-  if (!pal || !pal.swatches || pal.swatches.length === 0) return;
-  pal.swatches.forEach((hex) => {
-    const chip = document.createElement("span");
-    chip.className = "swatch-chip";
-    const dot = document.createElement("span");
-    dot.className = "swatch-dot";
-    dot.style.background = hex;
+function updateTopStripLabels() {
+  el.valReferences.textContent = state.refImageDataUrl ? "1/1" : "0/1";
+
+  const eraLabel = state.era !== "auto" ? state.era : "";
+  const genreLabel = state.genre !== "auto" ? FILM_GENRES.find((g) => g.id === state.genre)?.label : "";
+  el.valFilm.textContent = [eraLabel, genreLabel].filter(Boolean).join(", ") || "Auto";
+
+  const camParts = [
+    state.cameraBody !== "auto" ? CAMERA_BODIES.find((c) => c.id === state.cameraBody)?.label : "",
+    state.lensType !== "auto" ? LENS_TYPES.find((l) => l.id === state.lensType)?.label : "",
+    state.aperture !== "auto" ? state.aperture : ""
+  ].filter(Boolean);
+  el.valCamera.textContent = camParts[0] || "Auto";
+
+  const palObj = COLOR_PALETTES.find((p) => p.id === state.palette);
+  el.valPalette.textContent = state.palette === "match-ref" ? "Auto" : (palObj?.label || "Custom");
+
+  const lightObj = LIGHTING_MOODS.find((l) => l.id === state.lighting);
+  el.valLighting.textContent = lightObj?.label || "Match Ref";
+
+  el.hfModelName.textContent = state.stage === "stage1" ? "Nano Banana 2.1" : "Omni 1.2 Flash";
+  el.audioStateLabel.textContent = state.includeAudio ? "On" : "Off";
+}
+
+function renderPaletteVisualGrid() {
+  el.paletteVisualGrid.innerHTML = "";
+  COLOR_PALETTES.forEach((pal) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `hf-vis-card ${state.palette === pal.id ? "selected" : ""}`;
+
+    const media = document.createElement("div");
+    media.className = "hf-vis-media";
+
+    if (pal.imageSrc) {
+      const img = document.createElement("img");
+      img.src = pal.imageSrc;
+      img.alt = pal.label;
+      img.loading = "lazy";
+      img.onerror = () => img.remove();
+      media.appendChild(img);
+    }
+
+    if (pal.swatches && pal.swatches.length > 0) {
+      const bar = document.createElement("div");
+      bar.className = "hf-vis-swatch-bar";
+      pal.swatches.forEach((hex) => {
+        const s = document.createElement("span");
+        s.style.backgroundColor = hex;
+        bar.appendChild(s);
+      });
+      media.appendChild(bar);
+    }
+
     const lbl = document.createElement("span");
-    lbl.textContent = hex.toUpperCase();
-    chip.appendChild(dot);
-    chip.appendChild(lbl);
-    el.paletteSwatchBar.appendChild(chip);
+    lbl.className = "hf-vis-label";
+    lbl.textContent = pal.label;
+
+    btn.appendChild(media);
+    btn.appendChild(lbl);
+    btn.addEventListener("click", () => {
+      state.palette = pal.id;
+      el.selectPalette.value = pal.id;
+      state.manualOverride = false;
+      renderPaletteVisualGrid();
+      updateCompiledOutput();
+    });
+    el.paletteVisualGrid.appendChild(btn);
   });
 }
 
-function updateOpticsBadge() {
-  const activeCount = [
-    state.cameraBody !== "auto",
-    state.lensType !== "auto",
-    state.aperture !== "auto",
-    state.genre !== "auto",
-    state.era !== "auto",
-    state.palette !== "match-ref"
-  ].filter(Boolean).length;
-  el.opticsSummaryBadge.textContent = activeCount > 0 ? `${activeCount} active` : "Auto";
+function renderLightingVisualGrid() {
+  el.lightingVisualGrid.innerHTML = "";
+  LIGHTING_MOODS.forEach((mood) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `hf-vis-card ${state.lighting === mood.id ? "selected" : ""}`;
+
+    const media = document.createElement("div");
+    media.className = "hf-vis-media";
+
+    if (mood.poster) {
+      const img = document.createElement("img");
+      img.src = mood.poster;
+      img.alt = mood.label;
+      img.loading = "lazy";
+      img.onerror = () => img.remove();
+      media.appendChild(img);
+    }
+
+    const lbl = document.createElement("span");
+    lbl.className = "hf-vis-label";
+    lbl.textContent = mood.label;
+
+    btn.appendChild(media);
+    btn.appendChild(lbl);
+    btn.addEventListener("click", () => {
+      state.lighting = mood.id;
+      el.selectLighting.value = mood.id;
+      state.manualOverride = false;
+      renderLightingVisualGrid();
+      updateCompiledOutput();
+    });
+    el.lightingVisualGrid.appendChild(btn);
+  });
+}
+
+function setActivePopover(name) {
+  state.activePopover = state.activePopover === name ? null : name;
+  el.stripPills.forEach((p) => {
+    p.classList.toggle("active", p.dataset.popover === state.activePopover);
+  });
+  el.subpanelRefs.classList.toggle("hidden", state.activePopover !== "references");
+  el.subpanelFilm.classList.toggle("hidden", state.activePopover !== "film");
+  el.subpanelOptics.classList.toggle("hidden", state.activePopover !== "camera");
+  el.subpanelPalette.classList.toggle("hidden", state.activePopover !== "palette");
+  el.subpanelLighting.classList.toggle("hidden", state.activePopover !== "lighting");
+
+  if (state.activePopover === "palette") renderPaletteVisualGrid();
+  if (state.activePopover === "lighting") renderLightingVisualGrid();
 }
 
 function updateModeVisibility() {
   const isLibrary = state.stage === "stage1" || state.stage === "stage2";
   const isVideoControls = state.stage === "stage2" || state.stage === "motion_control";
   const isDurationVisible = state.stage !== "stage1";
+  const hasPopoverOpen = Boolean(state.activePopover);
 
   el.presetLibrarySection.classList.toggle("hidden", !isLibrary);
+  el.popoverStage.classList.toggle("hidden", !isLibrary && !hasPopoverOpen);
   el.lipsyncPanel.classList.toggle("hidden", state.stage !== "lipsync");
   el.motionControlPanel.classList.toggle("hidden", state.stage !== "motion_control");
   el.dramaPanel.classList.toggle("hidden", state.stage !== "drama");
@@ -277,17 +392,25 @@ function updateModeVisibility() {
   el.controlIntensity.classList.toggle("hidden", state.stage !== "stage2");
   el.controlDuration.classList.toggle("hidden", !isDurationVisible);
   el.toggleAudioWrap.classList.toggle("hidden", !isVideoControls);
+
+  el.modeBtns.forEach((b) => {
+    const active = b.dataset.stage === state.stage;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  el.sideNavBtns.forEach((b) => {
+    b.classList.toggle("active", b.dataset.sideNav === state.stage);
+  });
 }
 
 function updateCompiledOutput() {
   updateModeVisibility();
-  renderPaletteSwatches();
+  updateTopStripLabels();
   if (!state.manualOverride && state.stage !== "drama") {
     el.compiledPreview.value = compilePrompt(state, getStage1All(), getStage2All());
   }
   el.btnResetCompiled.classList.toggle("hidden", !state.manualOverride);
   el.charCount.textContent = `${el.compiledPreview.value.length} chars`;
-  updateOpticsBadge();
 }
 
 function renderCategories() {
@@ -371,7 +494,7 @@ function addToSequence(presetId) {
 
 async function deleteCustomPreset(stage, presetId) {
   state.customPresets[stage] = state.customPresets[stage].filter((p) => p.id !== presetId);
-  await chrome.storage.local.set({ [STORAGE_KEYS.customPresets]: state.customPresets });
+  await storageSet({ [STORAGE_KEYS.customPresets]: state.customPresets });
   if (stage === "stage1" && state.selectedStage1Id === presetId) {
     state.selectedStage1Id = STAGE1_PRESETS[0].id;
   }
@@ -402,8 +525,8 @@ function renderPresets() {
   });
 
   el.presetHeading.textContent = isVideo
-    ? "Camera Motion (35 Cinema Moves)"
-    : "Keyframe & Soul Studio";
+    ? "Camera Movement (35)"
+    : "Keyframe & Soul (113)";
   el.presetCount.textContent = `${filtered.length}/${fullList.length} presets`;
 
   renderSequenceBar();
@@ -411,7 +534,7 @@ function renderPresets() {
 
   if (filtered.length === 0) {
     const empty = document.createElement("p");
-    empty.style.cssText = "color:#71717a;font-size:11.5px;grid-column:1/-1;padding:8px 0;";
+    empty.style.cssText = "color:#898a8b;font-size:11.5px;grid-column:1/-1;padding:8px 0;";
     empty.textContent = "No presets match your filter. Try clearing the search box.";
     el.presetGrid.appendChild(empty);
     return;
@@ -433,6 +556,38 @@ function renderPresets() {
     const camGrid = document.createElement("div");
     camGrid.className = "cam-grid";
     stageDiv.appendChild(camGrid);
+
+    const camSubject = document.createElement("div");
+    camSubject.className = `cam-subject ${preset.motionPreview || "preview-dolly"}`;
+    stageDiv.appendChild(camSubject);
+
+    if (preset.poster) {
+      const posterImg = document.createElement("img");
+      posterImg.className = "preset-media-img";
+      posterImg.src = preset.poster;
+      posterImg.alt = preset.name;
+      posterImg.loading = "lazy";
+      posterImg.onerror = () => posterImg.remove();
+      stageDiv.appendChild(posterImg);
+    }
+
+    if (preset.videoSrc) {
+      const vid = document.createElement("video");
+      vid.className = "preset-media-video";
+      vid.muted = true;
+      vid.loop = true;
+      vid.playsInline = true;
+      vid.preload = "none";
+      vid.onerror = () => vid.remove();
+      card.addEventListener("mouseenter", () => {
+        if (!vid.src) vid.src = preset.videoSrc;
+        vid.play().catch(() => {});
+      });
+      card.addEventListener("mouseleave", () => {
+        if (vid.src) vid.pause();
+      });
+      stageDiv.appendChild(vid);
+    }
 
     const badge = document.createElement("span");
     badge.className = "preset-badge";
@@ -466,10 +621,6 @@ function renderPresets() {
       });
       stageDiv.appendChild(addBtn);
     }
-
-    const camSubject = document.createElement("div");
-    camSubject.className = `cam-subject ${preset.motionPreview || "preview-dolly"}`;
-    stageDiv.appendChild(camSubject);
 
     const meta = document.createElement("div");
     meta.className = "preset-meta";
@@ -533,7 +684,7 @@ function showToast(message) {
   toastTimer = setTimeout(() => el.toast.classList.add("hidden"), 2600);
 }
 
-// Active Tab Compatibility
+// Smart Tab Discovery (works in both Side Panel and Full Studio Tab)
 function setStatus(type, text, siteKey = "generic") {
   state.activeSite = siteKey;
   el.tabStatus.className = `status-bar status-${type}`;
@@ -541,36 +692,81 @@ function setStatus(type, text, siteKey = "generic") {
   el.btnSyncFlow.classList.toggle("hidden", siteKey !== "flow");
 
   const labelMap = {
-    flow: "Inject to Google Flow",
-    gemini: "Inject to Gemini",
-    aistudio: "Inject to AI Studio",
-    generic: "Inject to Active Tab"
+    flow: "Flow",
+    gemini: "Gemini",
+    aistudio: "AI Studio",
+    generic: "Tab"
   };
   el.btnInjectLabel.textContent = labelMap[siteKey] || labelMap.generic;
 }
 
-async function checkActiveTab() {
+async function storageGet(keys) {
+  if (chrome?.storage?.local) {
+    return await chrome.storage.local.get(keys);
+  }
+  const keyList = Array.isArray(keys) ? keys : [keys];
+  const out = {};
+  keyList.forEach((k) => {
+    try {
+      const raw = localStorage.getItem(`higgsfold:${k}`);
+      if (raw) out[k] = JSON.parse(raw);
+    } catch (_) {}
+  });
+  return out;
+}
+
+async function storageSet(obj) {
+  if (chrome?.storage?.local) {
+    return await chrome.storage.local.set(obj);
+  }
+  Object.entries(obj).forEach(([k, v]) => {
+    try {
+      localStorage.setItem(`higgsfold:${k}`, JSON.stringify(v));
+    } catch (_) {}
+  });
+}
+
+async function resolveTargetTab() {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url) {
-      setStatus("idle", "No active browser tab detected.", "generic");
-      return null;
+    if (!chrome?.tabs?.query) return null;
+    const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (active?.url && !active.url.startsWith("chrome-extension://")) {
+      return active;
     }
-    const url = tab.url;
-    if (url.includes("flow.google.com") || url.includes("labs.google")) {
-      setStatus("connected", "Connected: Google Flow", "flow");
-    } else if (url.includes("gemini.google.com")) {
-      setStatus("connected", "Connected: Google Gemini", "gemini");
-    } else if (url.includes("aistudio.google.com")) {
-      setStatus("connected", "Connected: Google AI Studio", "aistudio");
-    } else {
-      setStatus("warning", "Open Flow or Gemini to inject", "generic");
+    const candidates = await chrome.tabs.query({
+      url: [
+        "https://flow.google.com/*",
+        "https://labs.google/*",
+        "https://gemini.google.com/*",
+        "https://aistudio.google.com/*"
+      ]
+    });
+    if (candidates && candidates.length > 0) {
+      return candidates.find((t) => t.active) || candidates[0];
     }
-    return tab;
+    return active || null;
   } catch (_) {
-    setStatus("warning", "Tab check unavailable", "generic");
     return null;
   }
+}
+
+async function checkActiveTab() {
+  const tab = await resolveTargetTab();
+  if (!tab || !tab.url) {
+    setStatus("idle", "No Flow / Gemini tab detected.", "generic");
+    return null;
+  }
+  const url = tab.url;
+  if (url.includes("flow.google.com") || url.includes("labs.google")) {
+    setStatus("connected", "Connected: Google Flow", "flow");
+  } else if (url.includes("gemini.google.com")) {
+    setStatus("connected", "Connected: Google Gemini", "gemini");
+  } else if (url.includes("aistudio.google.com")) {
+    setStatus("connected", "Connected: Google AI Studio", "aistudio");
+  } else {
+    setStatus("warning", "Open Flow or Gemini to inject", "generic");
+  }
+  return tab;
 }
 
 async function sendMessageWithAutoBridge(tabId, message) {
@@ -613,7 +809,7 @@ async function syncFlowSettings(tabId) {
 
 // History & Storyboard
 async function saveToHistory(promptText) {
-  const { history = [] } = await chrome.storage.local.get(STORAGE_KEYS.history);
+  const { history = [] } = await storageGet(STORAGE_KEYS.history);
   const stageLabels = {
     stage1: "NANO BANANA 2.1",
     stage2: "OMNI 1.2 FLASH",
@@ -640,16 +836,16 @@ async function saveToHistory(promptText) {
   };
 
   const next = [entry, ...history].slice(0, 50);
-  await chrome.storage.local.set({ [STORAGE_KEYS.history]: next });
+  await storageSet({ [STORAGE_KEYS.history]: next });
 }
 
 async function renderHistory() {
-  const { history = [] } = await chrome.storage.local.get(STORAGE_KEYS.history);
+  const { history = [] } = await storageGet(STORAGE_KEYS.history);
   el.historyList.innerHTML = "";
 
   if (!history.length) {
     const empty = document.createElement("p");
-    empty.style.cssText = "color:#71717a;font-size:12px;";
+    empty.style.cssText = "color:#898a8b;font-size:12px;";
     empty.textContent = "No saved prompts yet. Inject or copy a prompt to log it here.";
     el.historyList.appendChild(empty);
     return;
@@ -686,7 +882,7 @@ async function renderHistory() {
 }
 
 async function refreshShotCount() {
-  const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
+  const { storyboard = [] } = await storageGet(STORAGE_KEYS.storyboard);
   el.shotCount.textContent = String(storyboard.length);
 }
 
@@ -696,7 +892,7 @@ async function saveShotToStoryboard() {
     showToast("Prompt is empty");
     return;
   }
-  const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
+  const { storyboard = [] } = await storageGet(STORAGE_KEYS.storyboard);
   const presetLabel =
     state.stage === "stage2"
       ? state.stage2Queue
@@ -716,18 +912,18 @@ async function saveShotToStoryboard() {
   };
 
   const next = [...storyboard, shot].slice(0, 40);
-  await chrome.storage.local.set({ [STORAGE_KEYS.storyboard]: next });
+  await storageSet({ [STORAGE_KEYS.storyboard]: next });
   await refreshShotCount();
   showToast(`Saved Shot #${next.length} to Storyboard`);
 }
 
 async function renderStoryboard() {
-  const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
+  const { storyboard = [] } = await storageGet(STORAGE_KEYS.storyboard);
   el.storyboardList.innerHTML = "";
 
   if (!storyboard.length) {
     const empty = document.createElement("p");
-    empty.style.cssText = "color:#71717a;font-size:12px;";
+    empty.style.cssText = "color:#898a8b;font-size:12px;";
     empty.textContent = "Storyboard is empty. Save shots or generate a Short Drama sequence.";
     el.storyboardList.appendChild(empty);
     return;
@@ -749,7 +945,7 @@ async function renderStoryboard() {
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
       const updated = storyboard.filter((s) => s.id !== shot.id);
-      await chrome.storage.local.set({ [STORAGE_KEYS.storyboard]: updated });
+      await storageSet({ [STORAGE_KEYS.storyboard]: updated });
       await refreshShotCount();
       await renderStoryboard();
     });
@@ -785,7 +981,7 @@ async function injectPrompt() {
 
   const tab = await checkActiveTab();
   if (!tab) {
-    showToast("No active tab found");
+    showToast("No active Flow / Gemini tab found");
     return;
   }
 
@@ -818,22 +1014,29 @@ async function injectPrompt() {
   }
 }
 
-// Mode Switching
+function switchStage(nextStage) {
+  state.stage = nextStage;
+  state.selectedCategory = "All";
+  state.manualOverride = false;
+  renderCategories();
+  renderPresets();
+  updateCompiledOutput();
+}
+
+// Mode Switching (Top Tabs + Left Desktop Sidebar)
 el.modeBtns.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    el.modeBtns.forEach((b) => {
-      b.classList.remove("active");
-      b.setAttribute("aria-selected", "false");
-    });
-    btn.classList.add("active");
-    btn.setAttribute("aria-selected", "true");
-    state.stage = btn.dataset.stage;
-    state.selectedCategory = "All";
-    state.manualOverride = false;
-    renderCategories();
-    renderPresets();
-    updateCompiledOutput();
-  });
+  btn.addEventListener("click", () => switchStage(btn.dataset.stage));
+});
+el.sideNavBtns.forEach((btn) => {
+  btn.addEventListener("click", () => switchStage(btn.dataset.sideNav));
+});
+
+// Top Strip Popovers
+el.stripPills.forEach((pill) => {
+  pill.addEventListener("click", () => setActivePopover(pill.dataset.popover));
+});
+el.closeSubpanelBtns.forEach((btn) => {
+  btn.addEventListener("click", () => setActivePopover(state.activePopover));
 });
 
 // Preset Filter & Multi-Move
@@ -883,20 +1086,19 @@ el.btnClearInput.addEventListener("click", () => {
   updateCompiledOutput();
 });
 
-// Lipsync Bindings
+// Lipsync
 el.lipsyncDialogue.addEventListener("input", (e) => {
   state.lipsyncDialogue = e.target.value;
   state.manualOverride = false;
   updateCompiledOutput();
 });
-
 el.lipsyncAmbience.addEventListener("input", (e) => {
   state.lipsyncAmbience = e.target.value;
   state.manualOverride = false;
   updateCompiledOutput();
 });
 
-// Motion Control Bindings
+// Motion Control
 el.inputMotionVideo.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -904,16 +1106,15 @@ el.inputMotionVideo.addEventListener("change", (e) => {
   el.motionVideoPreview.src = url;
   el.motionVideoPreview.classList.remove("hidden");
   el.motionVideoMeta.textContent = file.name;
-  showToast("Motion reference video loaded for preview");
+  showToast("Motion reference video loaded");
 });
-
 el.motionRefDesc.addEventListener("input", (e) => {
   state.motionRefDescription = e.target.value;
   state.manualOverride = false;
   updateCompiledOutput();
 });
 
-// Short Drama Generator
+// Short Drama
 el.btnGenerateDrama.addEventListener("click", async () => {
   const shots = generateShortDramaStoryboard(
     {
@@ -936,9 +1137,9 @@ el.btnGenerateDrama.addEventListener("click", async () => {
     getStage2All()
   );
 
-  const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
+  const { storyboard = [] } = await storageGet(STORAGE_KEYS.storyboard);
   const combined = [...storyboard, ...shots].slice(0, 40);
-  await chrome.storage.local.set({ [STORAGE_KEYS.storyboard]: combined });
+  await storageSet({ [STORAGE_KEYS.storyboard]: combined });
   await refreshShotCount();
 
   state.manualOverride = true;
@@ -975,7 +1176,6 @@ el.inputRefImage.addEventListener("change", async (e) => {
       el.ctSwatches.appendChild(chip);
     });
     el.ctSummary.textContent = result.summary;
-    el.ctBadge.textContent = `${result.swatches.length} colors`;
     el.ctPreviewWrap.classList.remove("hidden");
     el.btnSendRefImage.classList.remove("hidden");
     el.btnClearRefImage.classList.remove("hidden");
@@ -995,7 +1195,6 @@ el.btnClearRefImage.addEventListener("click", () => {
   state.refImageDataUrl = "";
   state.refImageName = "";
   state.refImageMime = "";
-  el.ctBadge.textContent = "None";
   el.ctPreviewWrap.classList.add("hidden");
   el.btnSendRefImage.classList.add("hidden");
   el.btnClearRefImage.classList.add("hidden");
@@ -1026,7 +1225,7 @@ el.btnSendRefImage.addEventListener("click", async () => {
   }
 });
 
-// Select Controls Bindings
+// Select Controls
 const selectBindings = [
   [el.selectIntensity, "intensity"],
   [el.selectAspect, "aspect"],
@@ -1050,9 +1249,7 @@ const selectBindings = [
 selectBindings.forEach(([selectNode, key]) => {
   selectNode.addEventListener("change", (e) => {
     state[key] = e.target.value;
-    if (key === "selectedStage2Id") {
-      state.stage2Queue = [e.target.value];
-    }
+    if (key === "selectedStage2Id") state.stage2Queue = [e.target.value];
     state.manualOverride = false;
     updateCompiledOutput();
   });
@@ -1082,13 +1279,8 @@ el.chkAudio.addEventListener("change", (e) => {
   updateCompiledOutput();
 });
 
-el.chkAutoSubmit.addEventListener("change", (e) => {
-  state.autoSubmit = e.target.checked;
-});
-
-el.chkAutoSync.addEventListener("change", (e) => {
-  state.autoSyncFlow = e.target.checked;
-});
+el.chkAutoSubmit.addEventListener("change", (e) => { state.autoSubmit = e.target.checked; });
+el.chkAutoSync.addEventListener("change", (e) => { state.autoSyncFlow = e.target.checked; });
 
 el.compiledPreview.addEventListener("input", () => {
   state.manualOverride = true;
@@ -1128,29 +1320,51 @@ el.btnSyncFlow.addEventListener("click", async () => {
 });
 
 el.btnOpenFlow.addEventListener("click", () => {
-  chrome.tabs.create({ url: "https://flow.google.com/" });
+  if (chrome?.tabs?.create) chrome.tabs.create({ url: "https://flow.google.com/" });
+  else window.open("https://flow.google.com/", "_blank", "noopener");
 });
 
-// Drawers: History, Storyboard, Editing Room, Custom Presets
-el.btnHistory.addEventListener("click", async () => {
+el.btnExpandStudio.addEventListener("click", () => {
+  const url = chrome?.runtime?.getURL
+    ? chrome.runtime.getURL("sidepanel/index.html?full=1")
+    : window.location.href;
+  if (chrome?.tabs?.create) chrome.tabs.create({ url });
+  else window.open(url, "_blank", "noopener");
+});
+
+// Drawers & Sidebar Actions
+const openHistory = async () => {
   await renderHistory();
   el.historyDrawer.classList.remove("hidden");
-});
+};
+const openStoryboard = async () => {
+  await renderStoryboard();
+  el.storyboardDrawer.classList.remove("hidden");
+};
+const openEditing = () => el.editingDrawer.classList.remove("hidden");
+const openCustom = () => {
+  const targetStage = state.stage === "stage1" ? "stage1" : "stage2";
+  el.cpStage.value = targetStage;
+  el.cpStage1Fields.classList.toggle("hidden", targetStage !== "stage1");
+  el.cpStage2Fields.classList.toggle("hidden", targetStage !== "stage2");
+  el.customPresetDrawer.classList.remove("hidden");
+};
+
+el.btnHistory.addEventListener("click", openHistory);
+el.btnSideHistory.addEventListener("click", openHistory);
 el.btnCloseHistory.addEventListener("click", () => el.historyDrawer.classList.add("hidden"));
 el.btnClearHistory.addEventListener("click", async () => {
-  await chrome.storage.local.set({ [STORAGE_KEYS.history]: [] });
+  await storageSet({ [STORAGE_KEYS.history]: [] });
   await renderHistory();
   showToast("History cleared");
 });
 
 el.btnSaveShot.addEventListener("click", saveShotToStoryboard);
-el.btnStoryboard.addEventListener("click", async () => {
-  await renderStoryboard();
-  el.storyboardDrawer.classList.remove("hidden");
-});
+el.btnStoryboard.addEventListener("click", openStoryboard);
+el.btnSideStoryboard.addEventListener("click", openStoryboard);
 el.btnCloseStoryboard.addEventListener("click", () => el.storyboardDrawer.classList.add("hidden"));
 el.btnCopyStoryboard.addEventListener("click", async () => {
-  const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
+  const { storyboard = [] } = await storageGet(STORAGE_KEYS.storyboard);
   const script = formatStoryboardExport(storyboard);
   if (!script) {
     showToast("Storyboard is empty");
@@ -1159,7 +1373,7 @@ el.btnCopyStoryboard.addEventListener("click", async () => {
   await copyText(script, `Copied ${storyboard.length} storyboard shots!`);
 });
 el.btnClearStoryboard.addEventListener("click", async () => {
-  await chrome.storage.local.set({ [STORAGE_KEYS.storyboard]: [] });
+  await storageSet({ [STORAGE_KEYS.storyboard]: [] });
   await refreshShotCount();
   await renderStoryboard();
   showToast("Storyboard cleared");
@@ -1178,16 +1392,12 @@ createEditingRoomController(
   showToast
 );
 
-el.btnEditingRoom.addEventListener("click", () => el.editingDrawer.classList.remove("hidden"));
+el.btnEditingRoom.addEventListener("click", openEditing);
+el.btnSideEditing.addEventListener("click", openEditing);
 el.btnCloseEdit.addEventListener("click", () => el.editingDrawer.classList.add("hidden"));
 
-el.btnCustomPreset.addEventListener("click", () => {
-  const targetStage = state.stage === "stage1" ? "stage1" : "stage2";
-  el.cpStage.value = targetStage;
-  el.cpStage1Fields.classList.toggle("hidden", targetStage !== "stage1");
-  el.cpStage2Fields.classList.toggle("hidden", targetStage !== "stage2");
-  el.customPresetDrawer.classList.remove("hidden");
-});
+el.btnCustomPreset.addEventListener("click", openCustom);
+el.btnSideCustom.addEventListener("click", openCustom);
 el.btnCloseCustom.addEventListener("click", () => el.customPresetDrawer.classList.add("hidden"));
 el.cpStage.addEventListener("change", (e) => {
   const targetStage = e.target.value;
@@ -1236,21 +1446,10 @@ el.customPresetForm.addEventListener("submit", async (e) => {
       state.selectedStage1Id = preset.id;
     }
 
-    await chrome.storage.local.set({ [STORAGE_KEYS.customPresets]: state.customPresets });
+    await storageSet({ [STORAGE_KEYS.customPresets]: state.customPresets });
     el.customPresetForm.reset();
     el.customPresetDrawer.classList.add("hidden");
-
-    state.stage = targetStage;
-    el.modeBtns.forEach((b) => {
-      const active = b.dataset.stage === targetStage;
-      b.classList.toggle("active", active);
-      b.setAttribute("aria-selected", active ? "true" : "false");
-    });
-    state.selectedCategory = "All";
-    state.manualOverride = false;
-    renderCategories();
-    renderPresets();
-    updateCompiledOutput();
+    switchStage(targetStage);
     showToast(`Saved custom preset "${preset.name}"`);
   } catch (err) {
     showToast(err.message || "Invalid preset fields");
@@ -1280,7 +1479,7 @@ el.inputImportPresets.addEventListener("change", async (e) => {
     const normalizedS2 = s2.map((p) => buildCustomPreset(p, "stage2"));
     state.customPresets.stage1 = [...normalizedS1, ...state.customPresets.stage1];
     state.customPresets.stage2 = [...normalizedS2, ...state.customPresets.stage2];
-    await chrome.storage.local.set({ [STORAGE_KEYS.customPresets]: state.customPresets });
+    await storageSet({ [STORAGE_KEYS.customPresets]: state.customPresets });
     renderPresets();
     showToast(`Imported ${normalizedS1.length + normalizedS2.length} presets`);
   } catch (_) {
@@ -1304,7 +1503,7 @@ el.btnPicker.addEventListener("click", async () => {
   }
 });
 
-chrome.runtime.onMessage.addListener((msg) => {
+chrome?.runtime?.onMessage?.addListener((msg) => {
   if (msg.type === "HIGGSFOLD_PICKER_PROGRESS") {
     el.pickerStepText.textContent = msg.text;
   }
@@ -1319,7 +1518,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 el.btnCancelPicker.addEventListener("click", async () => {
   const tab = await checkActiveTab();
-  if (tab) {
+  if (tab && chrome?.tabs?.sendMessage) {
     chrome.tabs.sendMessage(tab.id, { type: "HIGGSFOLD_STOP_PICKER" }).catch(() => {});
   }
   el.pickerBanner.classList.add("hidden");
@@ -1329,9 +1528,9 @@ el.btnResetSelectors.addEventListener("click", async () => {
   const tab = await checkActiveTab();
   if (tab?.url) {
     const host = new URL(tab.url).hostname;
-    const { customSelectors = {} } = await chrome.storage.local.get(STORAGE_KEYS.selectors);
+    const { customSelectors = {} } = await storageGet(STORAGE_KEYS.selectors);
     delete customSelectors[host];
-    await chrome.storage.local.set({ [STORAGE_KEYS.selectors]: customSelectors });
+    await storageSet({ [STORAGE_KEYS.selectors]: customSelectors });
     showToast(`Reset selectors for ${host}`);
   }
 });
@@ -1352,14 +1551,14 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-chrome.tabs.onActivated.addListener(checkActiveTab);
-chrome.tabs.onUpdated.addListener((_, info) => {
+chrome?.tabs?.onActivated?.addListener(checkActiveTab);
+chrome?.tabs?.onUpdated?.addListener((_, info) => {
   if (info.status === "complete") checkActiveTab();
 });
 
 async function boot() {
   try {
-    const stored = await chrome.storage.local.get([STORAGE_KEYS.customPresets]);
+    const stored = await storageGet([STORAGE_KEYS.customPresets]);
     if (stored.customPresets) {
       state.customPresets = {
         stage1: Array.isArray(stored.customPresets.stage1) ? stored.customPresets.stage1 : [],
