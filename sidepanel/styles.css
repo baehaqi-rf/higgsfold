@@ -979,11 +979,12 @@ select option {
 /* Higgsfield Movement / Soul Cards Grid */
 .preset-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   max-height: 260px;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 2px;
+  padding-right: 4px;
 }
 
 .preset-grid::-webkit-scrollbar {
@@ -997,6 +998,7 @@ select option {
 
 .preset-card {
   position: relative;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1663,7 +1665,7 @@ select option {
     flex-shrink: 0;
   }
   .preset-grid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     max-height: 320px;
   }
   .hf-visual-grid {
