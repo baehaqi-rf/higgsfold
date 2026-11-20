@@ -860,15 +860,25 @@
 
           writeValueToElement(inputEl, metaPrompt);
           const sendBtn = await waitForEnabledSubmit(SITE_PROFILES.gemini.submit, 1500);
-          if (!sendBtn) {
-            sendResponse({ ok: false, error: "Gemini Send button did not become active." });
-            return;
+          if (sendBtn) {
+            sendBtn.click();
+          } else {
+            inputEl.focus();
+            const enterInit = { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true };
+            inputEl.dispatchEvent(new KeyboardEvent("keydown", enterInit));
+            inputEl.dispatchEvent(new KeyboardEvent("keyup", enterInit));
           }
-          sendBtn.click();
 
           const start = Date.now();
           let lastObserved = "";
           let stableTicks = 0;
+          const requiredStableTicks = timeoutMs > 5000 ? 4 : 2;
+          const stopSelectors = [
+            'button[aria-label*="Stop" i]',
+            'button[mattooltip*="Stop" i]',
+            'button.stop-button',
+            '[data-test-id*="stop" i]'
+          ];
 
           while (Date.now() - start <= timeoutMs) {
             await new Promise((r) => setTimeout(r, 220));
@@ -882,10 +892,10 @@
               (nowNodes.length > beforeCount || nowLast !== beforeLastText);
             if (!hasNewReply) continue;
 
-            const stopBtn = findFirstVisible(['button[aria-label*="Stop" i]'], false);
+            const stopBtn = findFirstVisible(stopSelectors, false);
             if (nowLast === lastObserved && !stopBtn) {
               stableTicks += 1;
-              if (stableTicks >= 2) {
+              if (stableTicks >= requiredStableTicks) {
                 sendResponse({ ok: true, enhancedText: nowLast });
                 return;
               }

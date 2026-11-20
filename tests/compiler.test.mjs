@@ -280,3 +280,44 @@ test("Every Stage 1 (113) has real poster and Stage 2 (47) has BOTH real poster 
     assert.ok(p.videoSrc && p.videoSrc.startsWith("https://") && p.videoSrc.includes(".mp4"), `Missing real videoSrc for S2 ${p.id}`);
   }
 });
+
+test("Camera preset with Morph Target B (endObject) compiles cohesive morph beats and skips anti-morph or ref-keyframe boilerplate", () => {
+  const camMorph = compilePrompt(
+    {
+      stage: "stage2",
+      selectedStage2Id: "bullet-time-orbit",
+      stage2Queue: ["bullet-time-orbit"],
+      subject: "matte black sneaker",
+      endObject: "obsidian chrome hypercar",
+      duration: "8s",
+      aspect: "16:9",
+      lighting: "match-ref",
+      guardrails: true,
+      includeAudio: true
+    },
+    STAGE1_PRESETS,
+    STAGE2_PRESETS
+  );
+
+  assert.match(camMorph, /From matte black sneaker into obsidian chrome hypercar/);
+  assert.match(camMorph, /Morph directly into obsidian chrome hypercar/);
+  assert.match(camMorph, /settling decisively onto obsidian chrome hypercar/);
+  assert.match(camMorph, /conservation of momentum/);
+  assert.equal(/zero ghosting or limb morphing/.test(camMorph), false, "Camera+endObject must use transform guardrail");
+  assert.equal(/from the reference keyframe/.test(camMorph), false, "No reference image loaded must omit ref-keyframe boilerplate");
+
+  const stage1NoRef = compilePrompt(
+    {
+      stage: "stage1",
+      selectedStage1Id: "soul-iphone",
+      subject: "streetwear jacket portrait",
+      lighting: "match-ref",
+      guardrails: true
+    },
+    STAGE1_PRESETS,
+    STAGE2_PRESETS
+  );
+  assert.equal(/from the reference keyframe/.test(stage1NoRef), false);
+  assert.equal(/from the uploaded reference image/.test(stage1NoRef), false);
+  assert.equal(/\(TikTok Core\)/.test(stage1NoRef), false, "Must not leak internal UI category name into prompt");
+});

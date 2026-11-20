@@ -132,7 +132,7 @@ const state = {
   includeAudio: true,
   autoPlayMotion: true,
   autoSubmit: false,
-  autoSyncFlow: false,
+  autoSyncFlow: true,
   manualOverride: false,
   activeSite: "generic",
   customPresets: {
@@ -180,6 +180,7 @@ const el = {
   characterLock: document.getElementById("character-lock"),
   endObjectRow: document.getElementById("end-object-row"),
   endObjectInput: document.getElementById("end-object-input"),
+  quickRecipeBtns: document.querySelectorAll(".hf-qr-chip"),
   btnPickSoul: document.getElementById("btn-pick-soul"),
   btnClearInput: document.getElementById("btn-clear-input"),
   // Lipsync
@@ -587,15 +588,7 @@ function updateModeVisibility() {
   el.toggleAudioWrap.classList.toggle("hidden", !isVideoControls);
   el.selectFlowSubmode?.classList.toggle("hidden", state.stage === "stage1");
 
-  const activeStage2HasTransform =
-    state.stage === "stage2" &&
-    (state.stage2Queue || [state.selectedStage2Id]).some((id) =>
-      getStage2All().find((p) => p.id === id)?.transformMode
-    );
-  el.endObjectRow?.classList.toggle(
-    "hidden",
-    !(activeStage2HasTransform || Boolean(state.endRefImageDataUrl))
-  );
+  el.endObjectRow?.classList.toggle("hidden", state.stage !== "stage2");
 
   el.modeBtns.forEach((b) => {
     const active = b.dataset.stage === state.stage;
@@ -1361,6 +1354,24 @@ async function injectPrompt(promptOverride = null) {
       await syncFlowSettings(tab.id, promptText);
     }
 
+    if (promptOverride === null && (state.refImageDataUrl || state.endRefImageDataUrl)) {
+      if (state.refImageDataUrl) {
+        await sendImagePayloadToActiveTab(
+          state.refImageDataUrl,
+          state.refImageName || "start_frame.png",
+          state.refImageMime || "image/png"
+        );
+      }
+      if (state.stage === "stage2" && state.endRefImageDataUrl) {
+        await new Promise((r) => setTimeout(r, 220));
+        await sendImagePayloadToActiveTab(
+          state.endRefImageDataUrl,
+          state.endRefImageName || "end_frame.webp",
+          state.endRefImageMime || "image/webp"
+        );
+      }
+    }
+
     const response = await sendMessageWithAutoBridge(tab.id, {
       type: "HIGGSFOLD_INJECT_PROMPT",
       payload: {
@@ -1698,6 +1709,95 @@ el.modeBtns.forEach((btn) => {
 });
 el.sideNavBtns.forEach((btn) => {
   btn.addEventListener("click", () => switchStage(btn.dataset.sideNav));
+});
+
+const QUICK_RECIPES = {
+  "product-morph": {
+    label: "Morph A→B",
+    stage: "stage2",
+    presetId: "liquid-metal-morph",
+    duration: "5s",
+    aspect: "16:9",
+    lighting: "studio-clean",
+    palette: "black-gloss",
+    lensType: "clean-sharp",
+    genre: "commercial",
+    intensity: "cinematic"
+  },
+  "bullet-hero": {
+    label: "Bullet Time",
+    stage: "stage2",
+    presetId: "bullet-time-orbit",
+    duration: "8s",
+    aspect: "16:9",
+    lighting: "auto",
+    palette: "film-colors",
+    lensType: "anamorphic",
+    genre: "action",
+    intensity: "cinematic"
+  },
+  "crush-reveal": {
+    label: "Crush Zoom",
+    stage: "stage2",
+    presetId: "crash-zoom-in",
+    duration: "5s",
+    aspect: "16:9",
+    lighting: "cyber-neon",
+    palette: "ghost-in-the-code",
+    lensType: "anamorphic",
+    genre: "action",
+    intensity: "aggressive"
+  },
+  "luxury-macro": {
+    label: "Luxury Product",
+    stage: "stage2",
+    presetId: "slider-right",
+    duration: "5s",
+    aspect: "16:9",
+    lighting: "studio-clean",
+    palette: "black-gloss",
+    lensType: "clean-sharp",
+    genre: "commercial",
+    intensity: "subtle"
+  },
+  "raw-reel": {
+    label: "9:16 Reel",
+    stage: "stage2",
+    presetId: "handheld-docu-follow",
+    duration: "5s",
+    aspect: "9:16",
+    lighting: "auto",
+    palette: "film-colors",
+    lensType: "auto",
+    genre: "general",
+    intensity: "cinematic"
+  }
+};
+
+el.quickRecipeBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const recipe = QUICK_RECIPES[btn.dataset.recipe];
+    if (!recipe) return;
+    state.stage = recipe.stage;
+    state.selectedCategory = "All";
+    state.sequenceMode = false;
+    state.selectedStage2Id = recipe.presetId;
+    state.stage2Queue = [recipe.presetId];
+    state.duration = recipe.duration;
+    state.aspect = recipe.aspect;
+    state.lighting = recipe.lighting;
+    state.palette = recipe.palette;
+    state.lensType = recipe.lensType;
+    state.genre = recipe.genre;
+    state.intensity = recipe.intensity;
+    state.manualOverride = false;
+    el.quickRecipeBtns.forEach((b) => b.classList.toggle("active", b === btn));
+    syncDomFromState();
+    renderCategories();
+    renderPresets();
+    updateCompiledOutput();
+    showToast(`Applied "${recipe.label}" quick setup!`);
+  });
 });
 
 // Top Strip Popovers
@@ -2089,6 +2189,27 @@ async function resolveGeminiTab() {
   const active = await checkActiveTab();
   if (active?.url && active.url.includes("gemini.google.com")) {
     return active;
+  }
+  if (chrome?.tabs?.create && chrome?.tabs?.get) {
+    try {
+      showToast("Opening Gemini Web tab in background…");
+      const created = await chrome.tabs.create({
+        url: "https://gemini.google.com/app",
+        active: false
+      });
+      if (created?.id) {
+        const deadline = Date.now() + 7000;
+        while (Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 350));
+          const fresh = await chrome.tabs.get(created.id);
+          if (fresh?.status === "complete") {
+            await new Promise((r) => setTimeout(r, 1000));
+            return fresh;
+          }
+        }
+        return await chrome.tabs.get(created.id);
+      }
+    } catch (_) {}
   }
   return null;
 }

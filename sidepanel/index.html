@@ -235,6 +235,14 @@
             <div class="hf-composer-left">
               <!-- Subject & @Element Lock -->
               <div id="subject-section" class="hf-subject-wrap">
+                <div id="quick-recipes-bar" class="hf-quick-recipes" aria-label="1-Click Quick Setups">
+                  <span class="hf-qr-label">⚡ Quick:</span>
+                  <button type="button" class="hf-qr-chip" data-recipe="product-morph" title="Liquid Metal Morph A→B (5s, Commercial)">Morph A→B</button>
+                  <button type="button" class="hf-qr-chip" data-recipe="bullet-hero" title="360 Bullet Time Orbit (8s, Anamorphic)">Bullet Time</button>
+                  <button type="button" class="hf-qr-chip" data-recipe="crush-reveal" title="Fast Crush Zoom Reveal (5s, Moody Neon)">Crush Zoom</button>
+                  <button type="button" class="hf-qr-chip" data-recipe="luxury-macro" title="Luxury Product Macro Slider (5s, Black Gloss)">Luxury Product</button>
+                  <button type="button" class="hf-qr-chip" data-recipe="raw-reel" title="Authentic Handheld 9:16 Reel (5s)">9:16 Reel</button>
+                </div>
                 <div class="hf-subject-row">
                   <textarea
                     id="subject-input"
@@ -253,7 +261,7 @@
                   />
                   <button id="btn-pick-soul" class="text-btn accent-link" type="button" title="Choose or save Soul character">@Vault</button>
                 </div>
-                <div id="end-object-row" class="hf-element-bar hidden">
+                <div id="end-object-row" class="hf-element-bar">
                   <span style="font-size:10px;font-weight:700;color:#d1fe17;">→ B</span>
                   <input
                     id="end-object-input"
@@ -356,7 +364,7 @@
               <span>Auto-Click Generate</span>
             </label>
             <label class="toggle-chip" id="toggle-autosync-wrap">
-              <input type="checkbox" id="chk-autosync" />
+              <input type="checkbox" id="chk-autosync" checked />
               <span>Sync Flow Settings</span>
             </label>
             <button id="btn-copy" class="hf-mini-action" type="button" title="Copy prompt (Ctrl+Shift+C)">Copy</button>

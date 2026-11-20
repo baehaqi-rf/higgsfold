@@ -129,7 +129,7 @@ export function estimateLipsyncPace(dialogue, duration = "5s") {
 
 function buildTemporalStage2Beats(selectedPresets, intensityText, durSec, endObject = "") {
   const endGoal = (endObject || "").trim();
-  const isTransform = selectedPresets.some((p) => p.transformMode);
+  const isTransform = selectedPresets.some((p) => p.transformMode) || Boolean(endGoal);
 
   if (selectedPresets.length === 1) {
     const p = selectedPresets[0];
@@ -145,6 +145,14 @@ function buildTemporalStage2Beats(selectedPresets, intensityText, durSec, endObj
       ].join(" ");
     }
 
+    if (endGoal) {
+      return [
+        `0.0s–${t1}s: Open cleanly on the initial hero subject with balanced foreground depth as ${p.name} momentum initiates.`,
+        `${t1}s–${t2}s: ${p.cameraTrajectory} Across the motion arc, Morph directly into ${endGoal}. Execute with ${intensityText}.`,
+        `${t2}s–${t3}s: Ease-out deceleration settling decisively onto ${endGoal} in final hero framing; ${p.physicsSpec}`
+      ].join(" ");
+    }
+
     return [
       `0.0s–${t1}s: Open cleanly on the subject with balanced foreground depth as ${p.name} momentum initiates.`,
       `${t1}s–${t2}s: ${p.cameraTrajectory} Execute with ${intensityText}.`,
@@ -153,10 +161,13 @@ function buildTemporalStage2Beats(selectedPresets, intensityText, durSec, endObj
   }
 
   const seg = durSec / selectedPresets.length;
+  const anyPresetTransform = selectedPresets.some((p) => p.transformMode);
   const phases = selectedPresets.map((p, idx) => {
     const start = (idx * seg).toFixed(1);
     const end = (idx === selectedPresets.length - 1 ? durSec : (idx + 1) * seg).toFixed(1);
-    const targetSuffix = p.transformMode && endGoal ? ` Target end state: ${endGoal}.` : "";
+    const shouldAppendTarget =
+      Boolean(endGoal) && (p.transformMode || (!anyPresetTransform && idx === selectedPresets.length - 1));
+    const targetSuffix = shouldAppendTarget ? ` Target end state: ${endGoal}.` : "";
     return `${start}s–${end}s (${p.name}): ${p.cameraTrajectory}${targetSuffix}`;
   });
   return `${phases.join(" ")} Connect phases with ${isTransform ? "seamless kinetic momentum" : "fluid, uninterrupted camera handoff"} and ${intensityText}.`;
@@ -171,8 +182,18 @@ function buildTemporalStage2Beats(selectedPresets, intensityText, durSec, endObj
 export function compilePrompt(state, stage1Presets, stage2Presets) {
   const proseMode = state.promptFormat !== "structured";
   const useGuardrails = state.guardrails !== false;
-  const lightingObj =
+  const hasRefImage = Boolean(
+    state.refImageDataUrl ||
+      state.endRefImageDataUrl ||
+      (state.colorTransferSummary || "").trim()
+  );
+  const hasIdentityRef = Boolean(hasRefImage || (state.characterLock || "").trim());
+  const rawLightingObj =
     LIGHTING_MOODS.find((l) => l.id === state.lighting) || LIGHTING_MOODS[0];
+  const lightingText =
+    (state.lighting || "match-ref") === "match-ref" && !hasRefImage
+      ? "Natural cinematic exposure with rich tonal contrast and balanced highlight roll-off."
+      : rawLightingObj.text;
   const opticsOverride = buildOpticsLine(state);
   const filmSetup = buildFilmSetupLine(state, proseMode);
   const colorGrade = buildColorGradeLine(state);
@@ -191,11 +212,17 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
         `A cinematic ${state.aspect || "16:9"} still keyframe of ${subjectText}.`,
         opticsOverride ? `${preset.lensSpec} ${opticsOverride}` : preset.lensSpec,
         preset.compositionRule,
-        [preset.lightingSpec, lightingObj.text, colorGrade].filter(Boolean).join(" "),
+        [preset.lightingSpec, lightingText, colorGrade].filter(Boolean).join(" "),
         filmSetup
       ];
       if (useGuardrails) {
-        segments.push(preset.soulLockDirective);
+        const directive = hasIdentityRef
+          ? preset.soulLockDirective
+          : preset.soulLockDirective.replace(
+              /\bfrom (?:the )?(?:uploaded )?reference image\b/gi,
+              "with authentic optical micro-texture, true-to-life surface materiality, and natural depth separation"
+            );
+        segments.push(directive);
       }
       return segments.filter(Boolean).join(" ");
     }
@@ -208,7 +235,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     const lensLine = opticsOverride
       ? `${preset.lensSpec} ${opticsOverride}`
       : preset.lensSpec;
-    const lightingParts = [preset.lightingSpec, lightingObj.text, colorGrade]
+    const lightingParts = [preset.lightingSpec, lightingText, colorGrade]
       .filter(Boolean)
       .join(" ");
 
@@ -221,7 +248,15 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     ];
 
     if (filmSetup) lines.push(filmSetup);
-    if (useGuardrails) lines.push(`Identity Lock: ${preset.soulLockDirective}`);
+    if (useGuardrails) {
+      const directive = hasIdentityRef
+        ? preset.soulLockDirective
+        : preset.soulLockDirective.replace(
+            /\bfrom (?:the )?(?:uploaded )?reference image\b/gi,
+            "with authentic optical micro-texture, true-to-life surface materiality, and natural depth separation"
+          );
+      lines.push(`Identity Lock: ${directive}`);
+    }
     return lines.join("\n");
   }
 
@@ -240,7 +275,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
 
     if (proseMode) {
       const subjectText = buildProseSubject(state, "Close-up speaker looking directly into lens");
-      const visualFinish = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
+      const visualFinish = [opticsOverride, lightingText, colorGrade, filmSetup]
         .filter(Boolean)
         .join(" ");
       const segments = [
@@ -270,7 +305,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
       lines.push(`Camera Pairing (${camPreset.name}): ${camPreset.cameraTrajectory}`);
     }
     lines.push(`Voice & Audio Design: ${voiceText}; background ambience: ${envAudio}.`);
-    const visualFinish = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
+    const visualFinish = [opticsOverride, lightingText, colorGrade, filmSetup]
       .filter(Boolean)
       .join(" ");
     if (visualFinish) lines.push(`Optics & Grade: ${visualFinish}`);
@@ -295,7 +330,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
         "Target character from uploaded portrait/full-body reference"
       );
       const tEnd = durSec.toFixed(1);
-      const visualFinish = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
+      const visualFinish = [opticsOverride, lightingText, colorGrade, filmSetup]
         .filter(Boolean)
         .join(" ");
       const segments = [
@@ -323,7 +358,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
       `Motion Reference Choreography: ${refAction}.`,
       `Scene Control Rule: ${modeSpec}`,
       `Camera Sync: ${camPreset.cameraTrajectory}`,
-      `Continuity: Preserve exact target face, outfit details, and anatomy without ghosting or limb morphing. ${[opticsOverride, lightingObj.text, colorGrade].filter(Boolean).join(" ")}`
+      `Continuity: Preserve exact target face, outfit details, and anatomy without ghosting or limb morphing. ${[opticsOverride, lightingText, colorGrade].filter(Boolean).join(" ")}`
     ];
     if (useGuardrails) lines.push(`Guardrail: ${ANTI_MORPH_GUARDRAIL}`);
     if (state.includeAudio) {
@@ -358,16 +393,17 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
   const audioJoined = Array.from(
     new Set(selectedPresets.map((p) => p.audioCue.trim()).filter(Boolean))
   ).join(" ");
+  const endObjText = (state.endObject || "").trim();
   const hasTransformMove = selectedPresets.some((p) => p.transformMode);
-  const activeGuardrail = hasTransformMove
+  const isMorphShot = hasTransformMove || Boolean(endObjText);
+  const activeGuardrail = isMorphShot
     ? KINETIC_TRANSFORM_GUARDRAIL
     : ANTI_MORPH_GUARDRAIL;
-  const endObjText = (state.endObject || "").trim();
 
   if (proseMode) {
     const subjectText = buildProseSubject(
       state,
-      hasTransformMove
+      isMorphShot
         ? "Hero object in opening start frame"
         : "Hero subject positioned clearly in the reference scene"
     );
@@ -377,11 +413,11 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
       durSec,
       endObjText
     );
-    const lookParts = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
+    const lookParts = [opticsOverride, lightingText, colorGrade, filmSetup]
       .filter(Boolean)
       .join(" ");
     const multiPhysics = selectedPresets.length > 1 ? physicsUnique : "";
-    const introPrefix = hasTransformMove && endObjText
+    const introPrefix = isMorphShot && endObjText
       ? `${durSec.toFixed(1)}s kinetic transformation shot (${state.aspect || "16:9"}): From ${subjectText} into ${endObjText}.`
       : `${durSec.toFixed(1)}s cinema shot (${state.aspect || "16:9"}): ${subjectText}.`;
 
@@ -407,7 +443,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
 
   let trajectoryBlock;
   if (selectedPresets.length === 1) {
-    trajectoryBlock = `${hasTransformMove ? "Transformation Path" : "Camera Trajectory"}: ${selectedPresets[0].cameraTrajectory}${endObjText ? ` Target end state: ${endObjText}.` : ""} Execute with ${intensityText}.`;
+    trajectoryBlock = `${isMorphShot ? "Transformation Path" : "Camera Trajectory"}: ${selectedPresets[0].cameraTrajectory}${endObjText ? ` Target end state: ${endObjText}.` : ""} Execute with ${intensityText}.`;
   } else {
     const sequencedSteps = selectedPresets
       .map((p, idx) => `Phase ${idx + 1} (${p.name}): ${p.cameraTrajectory}`)
@@ -415,13 +451,13 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     trajectoryBlock = `Camera Sequence (Ordered Multi-Move): ${sequencedSteps}${endObjText ? ` Target end state: ${endObjText}.` : ""} Transition seamlessly across phases with ${intensityText}.`;
   }
 
-  const physicsParts = [physicsUnique, opticsOverride, lightingObj.text, colorGrade]
+  const physicsParts = [physicsUnique, opticsOverride, lightingText, colorGrade]
     .filter(Boolean)
     .join(" ");
 
   const blocks = [
-    `[${hasTransformMove ? "KINETIC VFX" : "CAMERA MOTION"}: ${titleNames} • ${state.duration} • AR ${state.aspect}${resolutionTag}]`,
-    endObjText && hasTransformMove
+    `[${isMorphShot ? "KINETIC VFX" : "CAMERA MOTION"}: ${titleNames} • ${state.duration} • AR ${state.aspect}${resolutionTag}]`,
+    endObjText
       ? `Transform Transition: ${subjectText} → ${endObjText}.`
       : `Scene Action: ${subjectText}.`,
     trajectoryBlock,

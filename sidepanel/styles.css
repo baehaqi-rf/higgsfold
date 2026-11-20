@@ -497,6 +497,45 @@ body {
   gap: 6px;
 }
 
+.hf-quick-recipes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.hf-qr-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-surface-brand);
+  letter-spacing: 0.02em;
+  margin-right: 2px;
+}
+
+.hf-qr-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--qc-border-subtle);
+  color: var(--color-font-secondary);
+  border-radius: 99px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.hf-qr-chip:hover {
+  color: var(--color-font-primary);
+  background: var(--neutral-10);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.hf-qr-chip.active {
+  background: rgba(209, 254, 23, 0.14);
+  border-color: rgba(209, 254, 23, 0.6);
+  color: var(--color-surface-brand);
+}
+
 .hf-subject-row {
   display: flex;
   align-items: flex-start;
@@ -1491,6 +1530,34 @@ select option {
   z-index: 50;
   white-space: nowrap;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* Side Panel Compact Ergonomics (<= 480px) */
+@media (max-width: 480px) {
+  .studio-header {
+    flex-wrap: wrap;
+    padding: 7px 8px;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .icon-btn {
+    padding: 4px 5.5px;
+    font-size: 10px;
+  }
+  .status-bar {
+    flex-wrap: wrap;
+    padding: 5px 8px;
+  }
+  .hf-strip-pill {
+    min-width: 82px;
+    padding: 5px 7px 5px 5px;
+  }
+  .hf-qr-chip {
+    padding: 3px 7px;
+    font-size: 9.5px;
+  }
 }
 
 /* =====================================================================

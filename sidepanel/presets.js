@@ -266,9 +266,9 @@ function buildSoulPresets() {
           : category === "Mood"
             ? "preview-neon-pulse"
             : "preview-subtle-breath",
-      lensSpec: `${name} aesthetic (${category}): ${opticGrammar}`,
-      lightingSpec: `Atmosphere & Lighting (${name}): ${visualCue}, sculpted with natural highlight roll-off.`,
-      compositionRule: `Editorial ${category.toLowerCase()} framing supporting clean subject separation.`,
+      lensSpec: opticGrammar,
+      lightingSpec: `${visualCue}, sculpted with natural highlight roll-off.`,
+      compositionRule: `Editorial ${name.toLowerCase()} composition supporting clean subject separation and authentic spatial depth.`,
       soulLockDirective:
         "Preserve exact facial identity, proportions, skin texture, and wardrobe continuity from the uploaded reference image."
     });
@@ -342,8 +342,8 @@ export const STAGE2_PRESETS = [
     category: "Dynamic",
     motionPreview: "preview-crash-zoom",
     defaultDuration: "5s",
-    cameraTrajectory: "Starts on a wide establishing framing, then executes an explosive high-speed optical crash zoom straight into an extreme close-up of the subject's eyes with tight ease-out deceleration.",
-    physicsSpec: "Authentic optical focal length compression, subtle directional motion blur during the rapid zoom ramp, micro camera settle at the end frame, zero warping of subject face.",
+    cameraTrajectory: "Starts on a wide establishing framing, then executes an explosive high-speed optical crash zoom straight into an extreme close-up of the subject's focal core and signature details with tight ease-out deceleration.",
+    physicsSpec: "Authentic optical focal length compression, subtle directional motion blur during the rapid zoom ramp, micro camera settle at the end frame, zero geometric or facial warping of the subject.",
     audioCue: "Tight rising sub-bass tension sweep peaking with a crisp cinematic whoosh-impact hit on zoom lock, followed by intimate room tone."
   },
   {
@@ -354,7 +354,7 @@ export const STAGE2_PRESETS = [
     motionPreview: "preview-orbit",
     defaultDuration: "8s",
     cameraTrajectory: "Smooth 180-degree high-speed circular orbital arc around the subject while the subject's motion slows into ultra-smooth slow motion (time-dilation effect).",
-    physicsSpec: "Strong parallax shift across background layers, floating dust/debris or hair strands suspended in slow motion, consistent lighting angle relative to the world.",
+    physicsSpec: "Strong parallax shift across background layers, floating atmospheric particulates, droplets, or fine details suspended in slow motion, consistent lighting angle relative to the world.",
     audioCue: "Deep time-slowing low-pass filter hum with subtle spatial wind sweeping left-to-right matching the orbital camera arc."
   },
   {
@@ -419,8 +419,8 @@ export const STAGE2_PRESETS = [
     category: "Handheld",
     motionPreview: "preview-handheld",
     defaultDuration: "5s",
-    cameraTrajectory: "Body-mounted Snorricam rig locked rigidly facing the subject's face while the entire surrounding environment rushes and tilts dynamically behind them as they move.",
-    physicsSpec: "Subject face remains locked dead-center in frame while background architecture streaks past with authentic wide-angle parallax.",
+    cameraTrajectory: "Subject-mounted Snorricam rig locked rigidly facing the hero subject while the entire surrounding environment rushes and tilts dynamically behind them during motion.",
+    physicsSpec: "Hero subject remains locked dead-center in frame while background architecture streaks past with authentic wide-angle parallax.",
     audioCue: "Tight rhythmic footsteps, close heartbeat/breath presence, and rushing urban or room ambience."
   },
   {
@@ -441,7 +441,7 @@ export const STAGE2_PRESETS = [
     category: "Optical",
     motionPreview: "preview-dolly",
     defaultDuration: "5s",
-    cameraTrajectory: "Locked-off tripod or subtle micro-drift shot executing a deliberate cinema follow-focus pull from soft foreground element onto the sharp eyes of the background subject (or reverse).",
+    cameraTrajectory: "Locked-off tripod or subtle micro-drift shot executing a deliberate cinema follow-focus pull from a soft foreground element onto the razor-sharp primary subject (or reverse).",
     physicsSpec: "Authentic shallow-depth anamorphic focus breathing and creamy circular/oval bokeh bloom during transition.",
     audioCue: "Quiet atmospheric tension bed subtly sharpening in spatial clarity as focus locks onto the subject."
   },
@@ -628,7 +628,7 @@ export const STAGE2_PRESETS = [
     category: "Optical",
     motionPreview: "preview-dolly",
     defaultDuration: "8s",
-    cameraTrajectory: "Hypnotic, ultra-gradual motorized cinema zoom lens creep slowly tightening framing from medium shot onto the subject's eyes without moving camera position.",
+    cameraTrajectory: "Hypnotic, ultra-gradual motorized cinema zoom lens creep slowly tightening framing from medium shot onto the primary subject's key focal details without moving camera position.",
     physicsSpec: "Pure optical focal-length elongation subtly compressing background depth over the full duration.",
     audioCue: "Low subtle dramatic room tone and quiet tension drone."
   },
