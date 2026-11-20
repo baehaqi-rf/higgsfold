@@ -400,31 +400,17 @@
       }
     };
 
+    // Expose chrome shim on window for same-origin iframe loading of ../sidepanel/index.html
+    window.__HIGGSFOLD_CHROME_SHIM__ = window.chrome;
+
     // Load content/bridge.js onto this host testbench DOM
     const bridgeScript = document.createElement("script");
     bridgeScript.src = "../content/bridge.js";
     document.body.appendChild(bridgeScript);
 
-    // Mount Side Panel inside iframe sharing the chrome shim
+    // Mount Side Panel natively at same origin (no srcdoc origin=null isolation)
     const frame = document.getElementById("sidepanel-frame");
-    frame.addEventListener("load", () => {
-      frame.contentWindow.chrome = window.chrome;
-      const s = frame.contentDocument.createElement("script");
-      s.type = "module";
-      s.src = "../sidepanel/app.js";
-      frame.contentDocument.body.appendChild(s);
-    });
-
-    // Fetch sidepanel/index.html, add <base> for /sidepanel/, strip auto app.js so chrome shim attaches first
-    const sidepanelBase = new URL("../sidepanel/", window.location.href).href;
-    fetch("../sidepanel/index.html")
-      .then((r) => r.text())
-      .then((html) => {
-        const patched = html
-          .replace("<head>", `<head><base href="${sidepanelBase}" />`)
-          .replace('<script type="module" src="app.js"><\/script>', "");
-        frame.srcdoc = patched;
-      });
+    frame.src = "../sidepanel/index.html";
 
     document.getElementById("switch-flow").addEventListener("click", (e) => {
       simulatedUrl = "https://flow.google.com/project/demo-test";

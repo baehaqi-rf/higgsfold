@@ -24,6 +24,11 @@ import {
 import { extractColorTransferFromFile } from "./color-transfer.js";
 import { createEditingRoomController } from "./editing-room.js";
 
+const chrome =
+  typeof globalThis.chrome !== "undefined" && globalThis.chrome?.tabs
+    ? globalThis.chrome
+    : globalThis.parent?.__HIGGSFOLD_CHROME_SHIM__ || globalThis.chrome;
+
 const STORAGE_KEYS = {
   history: "history",
   customPresets: "customPresets",
