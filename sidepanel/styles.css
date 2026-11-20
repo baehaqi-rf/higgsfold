@@ -1,4 +1,4 @@
-/* HiggsFold Studio v2.0 — Dark Cinema Studio UI (Higgsfield-aligned palette) */
+/* HiggsFold Studio v3.0 — Dark Cinema Studio UI (Higgsfield-aligned palette) */
 :root {
   --bg-root: #0a0a0a;
   --bg-surface: #141414;
@@ -55,16 +55,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 9px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
-  gap: 8px;
+  gap: 6px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
   flex: 1;
 }
@@ -75,13 +75,13 @@ body {
 }
 
 .brand-mark {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 7px;
   background: var(--accent);
   color: #0a0a0a;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 14px;
   display: grid;
   place-items: center;
   letter-spacing: -0.04em;
@@ -89,7 +89,7 @@ body {
 }
 
 .brand h1 {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -98,9 +98,9 @@ body {
 }
 
 .version-pill {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 99px;
   background: var(--accent-dim);
   border: 1px solid rgba(212, 255, 0, 0.35);
@@ -108,7 +108,7 @@ body {
 }
 
 .subtitle {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -117,21 +117,21 @@ body {
 
 .header-actions {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .icon-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  padding: 5px 7px;
+  padding: 5px 6px;
   border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10.5px;
+  font-weight: 600;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -213,22 +213,28 @@ body {
   text-decoration: underline;
 }
 
-/* Stage Tabs */
+/* 5-Mode Studio Nav */
+.studio-nav {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-root);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .stage-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-root);
 }
 
 .stage-tab {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
-  padding: 7px 10px;
+  gap: 1px;
+  padding: 6px 9px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -249,7 +255,7 @@ body {
 }
 
 .stage-kicker {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -260,8 +266,37 @@ body {
 }
 
 .stage-name {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
+}
+
+.studio-subtabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.sub-tab {
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.sub-tab:hover {
+  border-color: var(--text-muted);
+}
+
+.sub-tab.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Workspace */
@@ -271,7 +306,7 @@ body {
   padding: 11px 12px 20px;
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 12px;
 }
 
 .workspace::-webkit-scrollbar {
@@ -283,12 +318,26 @@ body {
   border-radius: 3px;
 }
 
+.studio-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   gap: 6px;
+}
+
+.studio-card .section-header {
+  margin-bottom: 0;
 }
 
 .section-header h2,
@@ -362,18 +411,14 @@ body {
   gap: 5px;
 }
 
-.category-pills::-webkit-scrollbar {
-  height: 3px;
-}
-
 .category-pill {
   flex-shrink: 0;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   border-radius: 99px;
-  padding: 3px 9px;
-  font-size: 10.5px;
+  padding: 3px 8px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -440,6 +485,18 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
+  max-height: 295px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.preset-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.preset-grid::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
 }
 
 .preset-card {
@@ -464,7 +521,7 @@ body {
 }
 
 .preset-stage {
-  height: 54px;
+  height: 52px;
   position: relative;
   overflow: hidden;
   background: radial-gradient(circle at 50% 45%, #23232c 0%, #0f0f13 100%);
@@ -642,6 +699,81 @@ body {
   15% { background: rgba(255, 255, 255, 0.95); }
 }
 
+/* Color Transfer & Media */
+.inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ct-preview-wrap {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  background: #0e0e12;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px;
+}
+
+.ct-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ct-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ct-swatches {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.swatch-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+
+.swatch-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.ct-summary {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.motion-ref-video {
+  width: 100%;
+  max-height: 140px;
+  border-radius: var(--radius-sm);
+  background: #000;
+  border: 1px solid var(--border);
+}
+
 /* Inputs & Selects */
 textarea, select {
   width: 100%;
@@ -690,7 +822,7 @@ textarea {
   margin-bottom: 4px;
 }
 
-/* Accordion (Pro Optics & Film Setup) */
+/* Accordion */
 .accordion {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -773,6 +905,11 @@ textarea {
   transition: all 0.15s ease;
 }
 
+.compact-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
 .btn-primary {
   background: var(--accent);
   color: #0a0a0a;
@@ -853,7 +990,7 @@ textarea {
   padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .history-list {
@@ -894,6 +1031,61 @@ textarea {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Editing Room */
+.edit-canvas {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #050507;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.edit-toolbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.edit-clip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-clip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  gap: 8px;
+}
+
+.edit-clip-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.edit-clip-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edit-clip-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.edit-clip-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .custom-form,

@@ -511,6 +511,48 @@
       return true;
     }
 
+    if (message.type === "HIGGSFOLD_INJECT_IMAGE") {
+      (async () => {
+        const { dataUrl, fileName, mimeType } = message.payload || {};
+        if (!dataUrl) {
+          sendResponse({ ok: false, error: "No image data provided." });
+          return;
+        }
+        const host = window.location.hostname;
+        const siteKey = getSiteKey(host);
+        const profile = SITE_PROFILES[siteKey] || SITE_PROFILES.generic;
+        const inputEl = findFirstVisible([...profile.input, ...SITE_PROFILES.generic.input], false);
+        if (!inputEl) {
+          sendResponse({ ok: false, error: "Target editor not found for image paste/drop." });
+          return;
+        }
+        try {
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          const file = new File([blob], fileName || "reference.png", { type: mimeType || blob.type || "image/png" });
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          inputEl.focus();
+          const pasteEvt = new ClipboardEvent("paste", {
+            bubbles: true,
+            cancelable: true,
+            clipboardData: dt
+          });
+          inputEl.dispatchEvent(pasteEvt);
+          const dropEvt = new DragEvent("drop", {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: dt
+          });
+          inputEl.dispatchEvent(dropEvt);
+          sendResponse({ ok: true, site: siteKey });
+        } catch (err) {
+          sendResponse({ ok: false, error: err?.message || "Image bridge failed." });
+        }
+      })();
+      return true;
+    }
+
     if (message.type === "HIGGSFOLD_INJECT_PROMPT") {
       (async () => {
         const { prompt, autoSubmit } = message.payload;

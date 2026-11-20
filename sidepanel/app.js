@@ -9,13 +9,20 @@ import {
   FILM_GENRES,
   FILM_ERAS,
   COLOR_PALETTES,
-  LIGHTING_MOODS
+  LIGHTING_MOODS,
+  LIPSYNC_EMOTIONS,
+  LIPSYNC_FRAMINGS,
+  LIPSYNC_VOICES,
+  MOTION_CONTROL_MODES
 } from "./presets.js";
 import {
   compilePrompt,
+  generateShortDramaStoryboard,
   buildCustomPreset,
   formatStoryboardExport
 } from "./compiler.js";
+import { extractColorTransferFromFile } from "./color-transfer.js";
+import { createEditingRoomController } from "./editing-room.js";
 
 const STORAGE_KEYS = {
   history: "history",
@@ -25,7 +32,7 @@ const STORAGE_KEYS = {
 };
 
 const state = {
-  stage: "stage2", // 'stage2' (Omni 1.2 Flash) | 'stage1' (Nano Banana 2.1)
+  stage: "stage2", // 'stage2' | 'stage1' | 'lipsync' | 'motion_control' | 'drama'
   selectedStage1Id: STAGE1_PRESETS[0].id,
   selectedStage2Id: STAGE2_PRESETS[0].id,
   stage2Queue: [STAGE2_PRESETS[0].id],
@@ -46,6 +53,17 @@ const state = {
   genre: "auto",
   era: "auto",
   palette: "match-ref",
+  colorTransferSummary: "",
+  refImageDataUrl: "",
+  refImageName: "",
+  refImageMime: "",
+  lipsyncDialogue: "",
+  lipsyncEmotion: "calm",
+  lipsyncFraming: "closeup",
+  lipsyncVoice: "natural-id",
+  lipsyncAmbience: "",
+  motionRefDescription: "",
+  motionControlMode: "video-bg",
   includeAudio: true,
   autoSubmit: false,
   autoSyncFlow: false,
@@ -57,9 +75,13 @@ const state = {
   }
 };
 
-// DOM Elements
 const el = {
-  stageTabs: document.querySelectorAll(".stage-tab"),
+  modeBtns: document.querySelectorAll(".stage-tab, .sub-tab"),
+  presetLibrarySection: document.getElementById("preset-library-section"),
+  lipsyncPanel: document.getElementById("lipsync-panel"),
+  motionControlPanel: document.getElementById("motion-control-panel"),
+  dramaPanel: document.getElementById("drama-panel"),
+  subjectSection: document.getElementById("subject-section"),
   presetHeading: document.getElementById("preset-heading"),
   presetCount: document.getElementById("preset-count"),
   presetSearch: document.getElementById("preset-search"),
@@ -72,6 +94,34 @@ const el = {
   subjectInput: document.getElementById("subject-input"),
   characterLock: document.getElementById("character-lock"),
   btnClearInput: document.getElementById("btn-clear-input"),
+  // Lipsync
+  lipsyncDialogue: document.getElementById("lipsync-dialogue"),
+  selectLipsyncEmotion: document.getElementById("select-lipsync-emotion"),
+  selectLipsyncFraming: document.getElementById("select-lipsync-framing"),
+  selectLipsyncVoice: document.getElementById("select-lipsync-voice"),
+  lipsyncAmbience: document.getElementById("lipsync-ambience"),
+  // Motion Control
+  inputMotionVideo: document.getElementById("input-motion-video"),
+  motionVideoMeta: document.getElementById("motion-video-meta"),
+  motionVideoPreview: document.getElementById("motion-video-preview"),
+  motionRefDesc: document.getElementById("motion-ref-desc"),
+  selectMotionMode: document.getElementById("select-motion-mode"),
+  selectMotionCam: document.getElementById("select-motion-cam"),
+  // Short Drama
+  dramaPremise: document.getElementById("drama-premise"),
+  dramaCast: document.getElementById("drama-cast"),
+  selectDramaShots: document.getElementById("select-drama-shots"),
+  btnGenerateDrama: document.getElementById("btn-generate-drama"),
+  // Color Transfer
+  inputRefImage: document.getElementById("input-ref-image"),
+  btnSendRefImage: document.getElementById("btn-send-ref-image"),
+  btnClearRefImage: document.getElementById("btn-clear-ref-image"),
+  ctBadge: document.getElementById("ct-badge"),
+  ctPreviewWrap: document.getElementById("ct-preview-wrap"),
+  ctThumb: document.getElementById("ct-thumb"),
+  ctSwatches: document.getElementById("ct-swatches"),
+  ctSummary: document.getElementById("ct-summary"),
+  // Controls & Optics
   selectIntensity: document.getElementById("select-intensity"),
   selectAspect: document.getElementById("select-aspect"),
   selectLighting: document.getElementById("select-lighting"),
@@ -84,15 +134,16 @@ const el = {
   selectPalette: document.getElementById("select-palette"),
   selectGenre: document.getElementById("select-genre"),
   selectEra: document.getElementById("select-era"),
+  paletteSwatchBar: document.getElementById("palette-swatch-bar"),
   opticsSummaryBadge: document.getElementById("optics-summary-badge"),
   btnResetOptics: document.getElementById("btn-reset-optics"),
   controlIntensity: document.getElementById("control-intensity"),
   controlDuration: document.getElementById("control-duration"),
   toggleAudioWrap: document.getElementById("toggle-audio-wrap"),
-  toggleAutoSyncWrap: document.getElementById("toggle-autosync-wrap"),
   chkAudio: document.getElementById("chk-audio"),
   chkAutoSubmit: document.getElementById("chk-autosubmit"),
   chkAutoSync: document.getElementById("chk-autosync"),
+  // Output & Footer
   compiledPreview: document.getElementById("compiled-preview"),
   btnResetCompiled: document.getElementById("btn-reset-compiled"),
   btnSaveShot: document.getElementById("btn-save-shot"),
@@ -100,10 +151,12 @@ const el = {
   btnCopy: document.getElementById("btn-copy"),
   btnInject: document.getElementById("btn-inject"),
   btnInjectLabel: document.getElementById("btn-inject-label"),
+  // Status
   tabStatus: document.getElementById("tab-status"),
   statusText: document.getElementById("status-text"),
   btnSyncFlow: document.getElementById("btn-sync-flow"),
   btnOpenFlow: document.getElementById("btn-open-flow"),
+  // Drawers
   btnHistory: document.getElementById("btn-history"),
   btnCloseHistory: document.getElementById("btn-close-history"),
   btnClearHistory: document.getElementById("btn-clear-history"),
@@ -116,6 +169,16 @@ const el = {
   btnCopyStoryboard: document.getElementById("btn-copy-storyboard"),
   btnClearStoryboard: document.getElementById("btn-clear-storyboard"),
   btnCloseStoryboard: document.getElementById("btn-close-storyboard"),
+  btnEditingRoom: document.getElementById("btn-editing-room"),
+  editingDrawer: document.getElementById("editing-drawer"),
+  btnCloseEdit: document.getElementById("btn-close-edit"),
+  btnClearEdit: document.getElementById("btn-clear-edit"),
+  editCanvas: document.getElementById("edit-canvas"),
+  inputEditClips: document.getElementById("input-edit-clips"),
+  btnPlayEdit: document.getElementById("btn-play-edit"),
+  btnExportEdit: document.getElementById("btn-export-edit"),
+  editClipList: document.getElementById("edit-clip-list"),
+  editClipCount: document.getElementById("edit-clip-count"),
   btnCustomPreset: document.getElementById("btn-custom-preset"),
   customPresetDrawer: document.getElementById("custom-preset-drawer"),
   btnCloseCustom: document.getElementById("btn-close-custom"),
@@ -125,6 +188,7 @@ const el = {
   cpStage2Fields: document.getElementById("cp-stage2-fields"),
   btnExportPresets: document.getElementById("btn-export-presets"),
   inputImportPresets: document.getElementById("input-import-presets"),
+  // Picker & Toast
   btnPicker: document.getElementById("btn-picker"),
   pickerBanner: document.getElementById("picker-banner"),
   pickerStepText: document.getElementById("picker-step-text"),
@@ -133,12 +197,12 @@ const el = {
   toast: document.getElementById("toast")
 };
 
-function populateSelect(selectEl, items) {
+function populateSelect(selectEl, items, valueKey = "id", labelKey = "label") {
   selectEl.innerHTML = "";
   items.forEach((item) => {
     const opt = document.createElement("option");
-    opt.value = item.id;
-    opt.textContent = item.label;
+    opt.value = item[valueKey];
+    opt.textContent = item[labelKey];
     selectEl.appendChild(opt);
   });
 }
@@ -150,6 +214,11 @@ populateSelect(el.selectAperture, APERTURE_OPTIONS);
 populateSelect(el.selectPalette, COLOR_PALETTES);
 populateSelect(el.selectGenre, FILM_GENRES);
 populateSelect(el.selectEra, FILM_ERAS);
+populateSelect(el.selectLipsyncEmotion, LIPSYNC_EMOTIONS);
+populateSelect(el.selectLipsyncFraming, LIPSYNC_FRAMINGS);
+populateSelect(el.selectLipsyncVoice, LIPSYNC_VOICES);
+populateSelect(el.selectMotionMode, MOTION_CONTROL_MODES);
+populateSelect(el.selectMotionCam, STAGE2_PRESETS, "id", "name");
 
 function getStage1All() {
   return [...state.customPresets.stage1, ...STAGE1_PRESETS];
@@ -157,6 +226,24 @@ function getStage1All() {
 
 function getStage2All() {
   return [...state.customPresets.stage2, ...STAGE2_PRESETS];
+}
+
+function renderPaletteSwatches() {
+  const pal = COLOR_PALETTES.find((p) => p.id === state.palette);
+  el.paletteSwatchBar.innerHTML = "";
+  if (!pal || !pal.swatches || pal.swatches.length === 0) return;
+  pal.swatches.forEach((hex) => {
+    const chip = document.createElement("span");
+    chip.className = "swatch-chip";
+    const dot = document.createElement("span");
+    dot.className = "swatch-dot";
+    dot.style.background = hex;
+    const lbl = document.createElement("span");
+    lbl.textContent = hex.toUpperCase();
+    chip.appendChild(dot);
+    chip.appendChild(lbl);
+    el.paletteSwatchBar.appendChild(chip);
+  });
 }
 
 function updateOpticsBadge() {
@@ -168,12 +255,29 @@ function updateOpticsBadge() {
     state.era !== "auto",
     state.palette !== "match-ref"
   ].filter(Boolean).length;
-
   el.opticsSummaryBadge.textContent = activeCount > 0 ? `${activeCount} active` : "Auto";
 }
 
+function updateModeVisibility() {
+  const isLibrary = state.stage === "stage1" || state.stage === "stage2";
+  const isVideoControls = state.stage === "stage2" || state.stage === "motion_control";
+  const isDurationVisible = state.stage !== "stage1";
+
+  el.presetLibrarySection.classList.toggle("hidden", !isLibrary);
+  el.lipsyncPanel.classList.toggle("hidden", state.stage !== "lipsync");
+  el.motionControlPanel.classList.toggle("hidden", state.stage !== "motion_control");
+  el.dramaPanel.classList.toggle("hidden", state.stage !== "drama");
+  el.subjectSection.classList.toggle("hidden", state.stage === "drama");
+
+  el.controlIntensity.classList.toggle("hidden", state.stage !== "stage2");
+  el.controlDuration.classList.toggle("hidden", !isDurationVisible);
+  el.toggleAudioWrap.classList.toggle("hidden", !isVideoControls);
+}
+
 function updateCompiledOutput() {
-  if (!state.manualOverride) {
+  updateModeVisibility();
+  renderPaletteSwatches();
+  if (!state.manualOverride && state.stage !== "drama") {
     el.compiledPreview.value = compilePrompt(state, getStage1All(), getStage2All());
   }
   el.btnResetCompiled.classList.toggle("hidden", !state.manualOverride);
@@ -182,6 +286,7 @@ function updateCompiledOutput() {
 }
 
 function renderCategories() {
+  if (state.stage !== "stage1" && state.stage !== "stage2") return;
   const categories = state.stage === "stage2" ? STAGE2_CATEGORIES : STAGE1_CATEGORIES;
   if (!categories.includes(state.selectedCategory)) {
     state.selectedCategory = "All";
@@ -278,6 +383,7 @@ async function deleteCustomPreset(stage, presetId) {
 }
 
 function renderPresets() {
+  if (state.stage !== "stage1" && state.stage !== "stage2") return;
   const isVideo = state.stage === "stage2";
   const fullList = isVideo ? getStage2All() : getStage1All();
   const query = state.searchQuery.trim().toLowerCase();
@@ -291,13 +397,9 @@ function renderPresets() {
   });
 
   el.presetHeading.textContent = isVideo
-    ? "Camera Motion Presets (Omni 1.2 Flash)"
-    : "Keyframe & Soul Presets (Nano Banana 2.1)";
+    ? "Camera Motion (35 Cinema Moves)"
+    : "Keyframe & Soul Studio";
   el.presetCount.textContent = `${filtered.length}/${fullList.length} presets`;
-
-  el.controlIntensity.classList.toggle("hidden", !isVideo);
-  el.controlDuration.classList.toggle("hidden", !isVideo);
-  el.toggleAudioWrap.classList.toggle("hidden", !isVideo);
 
   renderSequenceBar();
   el.presetGrid.innerHTML = "";
@@ -417,7 +519,7 @@ function renderPresets() {
   });
 }
 
-// Toast helper
+// Toast
 let toastTimer = null;
 function showToast(message) {
   el.toast.textContent = message;
@@ -426,14 +528,12 @@ function showToast(message) {
   toastTimer = setTimeout(() => el.toast.classList.add("hidden"), 2600);
 }
 
-// Active Tab Compatibility (REA Ground-Truth origins: flow.google.com, labs.google, gemini.google.com, aistudio.google.com)
+// Active Tab Compatibility
 function setStatus(type, text, siteKey = "generic") {
   state.activeSite = siteKey;
   el.tabStatus.className = `status-bar status-${type}`;
   el.statusText.textContent = text;
-
-  const isFlow = siteKey === "flow";
-  el.btnSyncFlow.classList.toggle("hidden", !isFlow);
+  el.btnSyncFlow.classList.toggle("hidden", siteKey !== "flow");
 
   const labelMap = {
     flow: "Inject to Google Flow",
@@ -480,13 +580,13 @@ async function sendMessageWithAutoBridge(tabId, message) {
   }
 }
 
-// Sync Studio Mode/Aspect/Batch/Model to Google Flow Popover
 async function syncFlowSettings(tabId) {
+  const isImageStage = state.stage === "stage1";
   const payload = {
-    mode: state.stage === "stage1" ? "Image" : "Video",
+    mode: isImageStage ? "Image" : "Video",
     aspectRatio: state.aspect,
     batchCount: state.batchCount,
-    modelHint: state.stage === "stage1" ? "Nano Banana 2.1" : "Omni 1.2 Flash"
+    modelHint: isImageStage ? "Nano Banana 2.1" : "Omni 1.2 Flash"
   };
   try {
     const res = await sendMessageWithAutoBridge(tabId, {
@@ -506,20 +606,29 @@ async function syncFlowSettings(tabId) {
   }
 }
 
-// History Persistence
+// History & Storyboard
 async function saveToHistory(promptText) {
   const { history = [] } = await chrome.storage.local.get(STORAGE_KEYS.history);
+  const stageLabels = {
+    stage1: "NANO BANANA 2.1",
+    stage2: "OMNI 1.2 FLASH",
+    lipsync: "LIPSYNC STUDIO",
+    motion_control: "MOTION CONTROL",
+    drama: "SHORT DRAMA"
+  };
   const presetName =
     state.stage === "stage2"
       ? state.stage2Queue
           .map((id) => getStage2All().find((p) => p.id === id)?.name)
           .filter(Boolean)
           .join(" → ")
-      : getStage1All().find((p) => p.id === state.selectedStage1Id)?.name;
+      : state.stage === "stage1"
+        ? getStage1All().find((p) => p.id === state.selectedStage1Id)?.name
+        : stageLabels[state.stage];
 
   const entry = {
     id: Date.now(),
-    stage: state.stage === "stage2" ? "OMNI 1.2 FLASH" : "NANO BANANA 2.1",
+    stage: stageLabels[state.stage] || "STUDIO",
     preset: presetName || "Custom",
     prompt: promptText,
     createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -544,7 +653,6 @@ async function renderHistory() {
   history.forEach((item) => {
     const div = document.createElement("div");
     div.className = "history-item";
-
     const top = document.createElement("div");
     top.className = "history-top";
     const leftSpan = document.createElement("span");
@@ -572,7 +680,6 @@ async function renderHistory() {
   });
 }
 
-// Storyboard / Shot List Persistence
 async function refreshShotCount() {
   const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
   el.shotCount.textContent = String(storyboard.length);
@@ -591,11 +698,13 @@ async function saveShotToStoryboard() {
           .map((id) => getStage2All().find((p) => p.id === id)?.name)
           .filter(Boolean)
           .join(" → ")
-      : getStage1All().find((p) => p.id === state.selectedStage1Id)?.name;
+      : state.stage === "stage1"
+        ? getStage1All().find((p) => p.id === state.selectedStage1Id)?.name
+        : state.stage.toUpperCase();
 
   const shot = {
     id: Date.now(),
-    stage: state.stage === "stage2" ? "OMNI 1.2 FLASH" : "NANO BANANA 2.1",
+    stage: state.stage.toUpperCase(),
     preset: presetLabel || "Custom",
     prompt: promptText,
     createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -614,7 +723,7 @@ async function renderStoryboard() {
   if (!storyboard.length) {
     const empty = document.createElement("p");
     empty.style.cssText = "color:#71717a;font-size:12px;";
-    empty.textContent = "Storyboard is empty. Click '+ Save Shot' above the compiled prompt to build a multi-shot sequence.";
+    empty.textContent = "Storyboard is empty. Save shots or generate a Short Drama sequence.";
     el.storyboardList.appendChild(empty);
     return;
   }
@@ -625,7 +734,6 @@ async function renderStoryboard() {
 
     const top = document.createElement("div");
     top.className = "history-top";
-
     const title = document.createElement("span");
     title.textContent = `SHOT ${idx + 1} • ${shot.stage} • ${shot.preset}`;
 
@@ -662,7 +770,7 @@ async function renderStoryboard() {
   });
 }
 
-// Inject Prompt into Active Tab
+// Inject Prompt
 async function injectPrompt() {
   const promptText = el.compiledPreview.value.trim();
   if (!promptText) {
@@ -705,43 +813,16 @@ async function injectPrompt() {
   }
 }
 
-// DOM Target Picker Mode (with auto-bridge injection fallback)
-async function startPicker() {
-  const tab = await checkActiveTab();
-  if (!tab) return;
-  try {
-    await sendMessageWithAutoBridge(tab.id, { type: "HIGGSFOLD_START_PICKER" });
-    el.pickerBanner.classList.remove("hidden");
-    el.pickerStepText.textContent =
-      "Step 1/2: Click the prompt box on the active Google Flow / Gemini page.";
-  } catch (_) {
-    showToast("Open Google Flow or Gemini tab before binding UI");
-  }
-}
-
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === "HIGGSFOLD_PICKER_PROGRESS") {
-    el.pickerStepText.textContent = msg.text;
-  }
-  if (msg.type === "HIGGSFOLD_PICKER_DONE") {
-    el.pickerBanner.classList.add("hidden");
-    showToast("Custom UI selectors saved for this site!");
-  }
-  if (msg.type === "HIGGSFOLD_PICKER_CANCELLED") {
-    el.pickerBanner.classList.add("hidden");
-  }
-});
-
-// Event Listeners
-el.stageTabs.forEach((tabBtn) => {
-  tabBtn.addEventListener("click", () => {
-    el.stageTabs.forEach((b) => {
+// Mode Switching
+el.modeBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    el.modeBtns.forEach((b) => {
       b.classList.remove("active");
       b.setAttribute("aria-selected", "false");
     });
-    tabBtn.classList.add("active");
-    tabBtn.setAttribute("aria-selected", "true");
-    state.stage = tabBtn.dataset.stage;
+    btn.classList.add("active");
+    btn.setAttribute("aria-selected", "true");
+    state.stage = btn.dataset.stage;
     state.selectedCategory = "All";
     state.manualOverride = false;
     renderCategories();
@@ -750,6 +831,7 @@ el.stageTabs.forEach((tabBtn) => {
   });
 });
 
+// Preset Filter & Multi-Move
 el.presetSearch.addEventListener("input", (e) => {
   state.searchQuery = e.target.value;
   renderPresets();
@@ -774,6 +856,7 @@ el.btnClearSequence.addEventListener("click", () => {
   updateCompiledOutput();
 });
 
+// Subject & Character Lock
 el.subjectInput.addEventListener("input", (e) => {
   state.subject = e.target.value;
   state.manualOverride = false;
@@ -795,6 +878,150 @@ el.btnClearInput.addEventListener("click", () => {
   updateCompiledOutput();
 });
 
+// Lipsync Bindings
+el.lipsyncDialogue.addEventListener("input", (e) => {
+  state.lipsyncDialogue = e.target.value;
+  state.manualOverride = false;
+  updateCompiledOutput();
+});
+
+el.lipsyncAmbience.addEventListener("input", (e) => {
+  state.lipsyncAmbience = e.target.value;
+  state.manualOverride = false;
+  updateCompiledOutput();
+});
+
+// Motion Control Bindings
+el.inputMotionVideo.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  el.motionVideoPreview.src = url;
+  el.motionVideoPreview.classList.remove("hidden");
+  el.motionVideoMeta.textContent = file.name;
+  showToast("Motion reference video loaded for preview");
+});
+
+el.motionRefDesc.addEventListener("input", (e) => {
+  state.motionRefDescription = e.target.value;
+  state.manualOverride = false;
+  updateCompiledOutput();
+});
+
+// Short Drama Generator
+el.btnGenerateDrama.addEventListener("click", async () => {
+  const shots = generateShortDramaStoryboard(
+    {
+      premise: el.dramaPremise.value,
+      cast: el.dramaCast.value,
+      shotCount: el.selectDramaShots.value,
+      aspect: state.aspect,
+      duration: state.duration,
+      palette: state.palette,
+      lighting: state.lighting,
+      genre: state.genre,
+      era: state.era,
+      cameraBody: state.cameraBody,
+      lensType: state.lensType,
+      aperture: state.aperture,
+      keyframePresetId: state.selectedStage1Id,
+      includeAudio: state.includeAudio
+    },
+    getStage1All(),
+    getStage2All()
+  );
+
+  const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
+  const combined = [...storyboard, ...shots].slice(0, 40);
+  await chrome.storage.local.set({ [STORAGE_KEYS.storyboard]: combined });
+  await refreshShotCount();
+
+  state.manualOverride = true;
+  el.compiledPreview.value = shots[0].prompt;
+  updateCompiledOutput();
+  await renderStoryboard();
+  el.storyboardDrawer.classList.remove("hidden");
+  showToast(`Generated ${shots.length} Short Drama shots!`);
+});
+
+// Color Transfer & Image Bridge
+el.inputRefImage.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const result = await extractColorTransferFromFile(file);
+    state.colorTransferSummary = result.summary;
+    state.refImageDataUrl = result.dataUrl;
+    state.refImageName = result.name;
+    state.refImageMime = result.type;
+
+    el.ctThumb.src = result.dataUrl;
+    el.ctSwatches.innerHTML = "";
+    result.swatches.forEach((hex) => {
+      const chip = document.createElement("span");
+      chip.className = "swatch-chip";
+      const dot = document.createElement("span");
+      dot.className = "swatch-dot";
+      dot.style.background = hex;
+      const lbl = document.createElement("span");
+      lbl.textContent = hex.toUpperCase();
+      chip.appendChild(dot);
+      chip.appendChild(lbl);
+      el.ctSwatches.appendChild(chip);
+    });
+    el.ctSummary.textContent = result.summary;
+    el.ctBadge.textContent = `${result.swatches.length} colors`;
+    el.ctPreviewWrap.classList.remove("hidden");
+    el.btnSendRefImage.classList.remove("hidden");
+    el.btnClearRefImage.classList.remove("hidden");
+
+    state.manualOverride = false;
+    updateCompiledOutput();
+    showToast("Color Transfer palette extracted!");
+  } catch (err) {
+    showToast(err?.message || "Could not analyze reference image");
+  } finally {
+    el.inputRefImage.value = "";
+  }
+});
+
+el.btnClearRefImage.addEventListener("click", () => {
+  state.colorTransferSummary = "";
+  state.refImageDataUrl = "";
+  state.refImageName = "";
+  state.refImageMime = "";
+  el.ctBadge.textContent = "None";
+  el.ctPreviewWrap.classList.add("hidden");
+  el.btnSendRefImage.classList.add("hidden");
+  el.btnClearRefImage.classList.add("hidden");
+  state.manualOverride = false;
+  updateCompiledOutput();
+});
+
+el.btnSendRefImage.addEventListener("click", async () => {
+  if (!state.refImageDataUrl) return;
+  const tab = await checkActiveTab();
+  if (!tab) return;
+  try {
+    const res = await sendMessageWithAutoBridge(tab.id, {
+      type: "HIGGSFOLD_INJECT_IMAGE",
+      payload: {
+        dataUrl: state.refImageDataUrl,
+        fileName: state.refImageName,
+        mimeType: state.refImageMime
+      }
+    });
+    if (res?.ok) {
+      showToast("Reference image pasted/dropped to page!");
+    } else {
+      showToast(res?.error || "Could not paste image directly");
+    }
+  } catch (_) {
+    showToast("Open Flow or Gemini tab first");
+  }
+});
+
+// Select Controls Bindings
 const selectBindings = [
   [el.selectIntensity, "intensity"],
   [el.selectAspect, "aspect"],
@@ -807,12 +1034,20 @@ const selectBindings = [
   [el.selectAperture, "aperture"],
   [el.selectPalette, "palette"],
   [el.selectGenre, "genre"],
-  [el.selectEra, "era"]
+  [el.selectEra, "era"],
+  [el.selectLipsyncEmotion, "lipsyncEmotion"],
+  [el.selectLipsyncFraming, "lipsyncFraming"],
+  [el.selectLipsyncVoice, "lipsyncVoice"],
+  [el.selectMotionMode, "motionControlMode"],
+  [el.selectMotionCam, "selectedStage2Id"]
 ];
 
 selectBindings.forEach(([selectNode, key]) => {
   selectNode.addEventListener("change", (e) => {
     state[key] = e.target.value;
+    if (key === "selectedStage2Id") {
+      state.stage2Queue = [e.target.value];
+    }
     state.manualOverride = false;
     updateCompiledOutput();
   });
@@ -891,34 +1126,24 @@ el.btnOpenFlow.addEventListener("click", () => {
   chrome.tabs.create({ url: "https://flow.google.com/" });
 });
 
-// History Drawer
+// Drawers: History, Storyboard, Editing Room, Custom Presets
 el.btnHistory.addEventListener("click", async () => {
   await renderHistory();
   el.historyDrawer.classList.remove("hidden");
 });
-
-el.btnCloseHistory.addEventListener("click", () => {
-  el.historyDrawer.classList.add("hidden");
-});
-
+el.btnCloseHistory.addEventListener("click", () => el.historyDrawer.classList.add("hidden"));
 el.btnClearHistory.addEventListener("click", async () => {
   await chrome.storage.local.set({ [STORAGE_KEYS.history]: [] });
   await renderHistory();
   showToast("History cleared");
 });
 
-// Storyboard Drawer
 el.btnSaveShot.addEventListener("click", saveShotToStoryboard);
-
 el.btnStoryboard.addEventListener("click", async () => {
   await renderStoryboard();
   el.storyboardDrawer.classList.remove("hidden");
 });
-
-el.btnCloseStoryboard.addEventListener("click", () => {
-  el.storyboardDrawer.classList.add("hidden");
-});
-
+el.btnCloseStoryboard.addEventListener("click", () => el.storyboardDrawer.classList.add("hidden"));
 el.btnCopyStoryboard.addEventListener("click", async () => {
   const { storyboard = [] } = await chrome.storage.local.get(STORAGE_KEYS.storyboard);
   const script = formatStoryboardExport(storyboard);
@@ -928,7 +1153,6 @@ el.btnCopyStoryboard.addEventListener("click", async () => {
   }
   await copyText(script, `Copied ${storyboard.length} storyboard shots!`);
 });
-
 el.btnClearStoryboard.addEventListener("click", async () => {
   await chrome.storage.local.set({ [STORAGE_KEYS.storyboard]: [] });
   await refreshShotCount();
@@ -936,18 +1160,30 @@ el.btnClearStoryboard.addEventListener("click", async () => {
   showToast("Storyboard cleared");
 });
 
-// Custom Preset Builder Drawer
+createEditingRoomController(
+  {
+    canvas: el.editCanvas,
+    inputFiles: el.inputEditClips,
+    btnPlay: el.btnPlayEdit,
+    btnExport: el.btnExportEdit,
+    btnClear: el.btnClearEdit,
+    clipList: el.editClipList,
+    clipCount: el.editClipCount
+  },
+  showToast
+);
+
+el.btnEditingRoom.addEventListener("click", () => el.editingDrawer.classList.remove("hidden"));
+el.btnCloseEdit.addEventListener("click", () => el.editingDrawer.classList.add("hidden"));
+
 el.btnCustomPreset.addEventListener("click", () => {
-  el.cpStage.value = state.stage;
-  el.cpStage1Fields.classList.toggle("hidden", state.stage !== "stage1");
-  el.cpStage2Fields.classList.toggle("hidden", state.stage !== "stage2");
+  const targetStage = state.stage === "stage1" ? "stage1" : "stage2";
+  el.cpStage.value = targetStage;
+  el.cpStage1Fields.classList.toggle("hidden", targetStage !== "stage1");
+  el.cpStage2Fields.classList.toggle("hidden", targetStage !== "stage2");
   el.customPresetDrawer.classList.remove("hidden");
 });
-
-el.btnCloseCustom.addEventListener("click", () => {
-  el.customPresetDrawer.classList.add("hidden");
-});
-
+el.btnCloseCustom.addEventListener("click", () => el.customPresetDrawer.classList.add("hidden"));
 el.cpStage.addEventListener("change", (e) => {
   const targetStage = e.target.value;
   el.cpStage1Fields.classList.toggle("hidden", targetStage !== "stage1");
@@ -999,14 +1235,12 @@ el.customPresetForm.addEventListener("submit", async (e) => {
     el.customPresetForm.reset();
     el.customPresetDrawer.classList.add("hidden");
 
-    if (state.stage !== targetStage) {
-      state.stage = targetStage;
-      el.stageTabs.forEach((b) => {
-        const active = b.dataset.stage === targetStage;
-        b.classList.toggle("active", active);
-        b.setAttribute("aria-selected", active ? "true" : "false");
-      });
-    }
+    state.stage = targetStage;
+    el.modeBtns.forEach((b) => {
+      const active = b.dataset.stage === targetStage;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-selected", active ? "true" : "false");
+    });
     state.selectedCategory = "All";
     state.manualOverride = false;
     renderCategories();
@@ -1051,8 +1285,32 @@ el.inputImportPresets.addEventListener("change", async (e) => {
   }
 });
 
-// Picker Controls
-el.btnPicker.addEventListener("click", startPicker);
+// Visual DOM Picker
+el.btnPicker.addEventListener("click", async () => {
+  const tab = await checkActiveTab();
+  if (!tab) return;
+  try {
+    await sendMessageWithAutoBridge(tab.id, { type: "HIGGSFOLD_START_PICKER" });
+    el.pickerBanner.classList.remove("hidden");
+    el.pickerStepText.textContent =
+      "Step 1/2: Click the prompt box on the active Google Flow / Gemini page.";
+  } catch (_) {
+    showToast("Open Google Flow or Gemini tab before binding UI");
+  }
+});
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === "HIGGSFOLD_PICKER_PROGRESS") {
+    el.pickerStepText.textContent = msg.text;
+  }
+  if (msg.type === "HIGGSFOLD_PICKER_DONE") {
+    el.pickerBanner.classList.add("hidden");
+    showToast("Custom UI selectors saved for this site!");
+  }
+  if (msg.type === "HIGGSFOLD_PICKER_CANCELLED") {
+    el.pickerBanner.classList.add("hidden");
+  }
+});
 
 el.btnCancelPicker.addEventListener("click", async () => {
   const tab = await checkActiveTab();
@@ -1073,7 +1331,7 @@ el.btnResetSelectors.addEventListener("click", async () => {
   }
 });
 
-// Keyboard Shortcuts inside Side Panel
+// Keyboard Shortcuts
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
     e.preventDefault();
@@ -1089,13 +1347,11 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Tab lifecycle refresh
 chrome.tabs.onActivated.addListener(checkActiveTab);
 chrome.tabs.onUpdated.addListener((_, info) => {
   if (info.status === "complete") checkActiveTab();
 });
 
-// Initial Boot
 async function boot() {
   try {
     const stored = await chrome.storage.local.get([STORAGE_KEYS.customPresets]);

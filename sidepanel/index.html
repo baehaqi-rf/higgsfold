@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HiggsFold Studio v2.0</title>
+  <title>HiggsFold Studio v3.0</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -13,38 +13,26 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">H</div>
         <div class="brand-text">
-          <h1>HiggsFold <span class="version-pill">v2.0</span></h1>
+          <h1>HiggsFold <span class="version-pill">v3.0</span></h1>
           <p class="subtitle">Flow &amp; Gemini Director</p>
         </div>
       </div>
       <div class="header-actions">
         <button id="btn-picker" class="icon-btn" type="button" title="Bind DOM Target (Click input &amp; button on active page)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="9"></circle>
-            <line x1="12" y1="2" x2="12" y2="6"></line>
-            <line x1="12" y1="18" x2="12" y2="22"></line>
-            <line x1="2" y1="12" x2="6" y2="12"></line>
-            <line x1="18" y1="12" x2="22" y2="12"></line>
-          </svg>
           <span>Bind</span>
         </button>
         <button id="btn-custom-preset" class="icon-btn" type="button" title="Custom Preset Builder &amp; JSON Import/Export">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Preset</span>
+          <span>+Preset</span>
+        </button>
+        <button id="btn-editing-room" class="icon-btn" type="button" title="Editing Room (Timeline Preview &amp; WebM Export)">
+          <span>Edit</span>
         </button>
         <button id="btn-storyboard" class="icon-btn" type="button" title="Storyboard Shot List">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-            <line x1="9" y1="4" x2="9" y2="20"></line>
-          </svg>
+          <span>Shots</span>
           <span id="shot-count" class="count-pill">0</span>
         </button>
         <button id="btn-history" class="icon-btn" type="button" title="Prompt History">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="1 4 1 10 7 10"></polyline>
             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
           </svg>
@@ -62,44 +50,49 @@
       </div>
     </div>
 
-    <!-- 2-Stage Pipeline Switcher -->
-    <nav class="stage-tabs" role="tablist">
-      <button class="stage-tab active" data-stage="stage2" role="tab" aria-selected="true" type="button">
-        <span class="stage-kicker">STAGE 2 • VIDEO</span>
-        <span class="stage-name">Omni 1.2 Flash</span>
-      </button>
-      <button class="stage-tab" data-stage="stage1" role="tab" aria-selected="false" type="button">
-        <span class="stage-kicker">STAGE 1 • IMAGE</span>
-        <span class="stage-name">Nano Banana 2.1</span>
-      </button>
+    <!-- 5-Mode Higgsfield Studio Switcher -->
+    <nav class="studio-nav" role="tablist" aria-label="Studio Modes">
+      <div class="stage-tabs">
+        <button class="stage-tab active" data-stage="stage2" role="tab" aria-selected="true" type="button">
+          <span class="stage-kicker">STAGE 2 • VIDEO</span>
+          <span class="stage-name">Motion (35)</span>
+        </button>
+        <button class="stage-tab" data-stage="stage1" role="tab" aria-selected="false" type="button">
+          <span class="stage-kicker">STAGE 1 • SOUL</span>
+          <span class="stage-name">Keyframe (113)</span>
+        </button>
+      </div>
+      <div class="studio-subtabs">
+        <button class="sub-tab" data-stage="lipsync" role="tab" aria-selected="false" type="button">Lipsync Studio</button>
+        <button class="sub-tab" data-stage="motion_control" role="tab" aria-selected="false" type="button">Motion Control</button>
+        <button class="sub-tab" data-stage="drama" role="tab" aria-selected="false" type="button">Short Drama</button>
+      </div>
     </nav>
 
     <!-- Main Scrollable Studio Workspace -->
     <main class="workspace">
-      <!-- Preset Grid Section -->
-      <section class="panel-section">
+      <!-- Preset Library (Stage 1 & Stage 2) -->
+      <section id="preset-library-section" class="panel-section">
         <div class="section-header">
           <h2 id="preset-heading">Camera Motion Presets</h2>
           <div class="section-tools">
             <button id="btn-toggle-sequence" class="mini-toggle hidden" type="button" title="Chain up to 3 camera moves in order">
               Multi-Move: OFF
             </button>
-            <span id="preset-count" class="meta-badge">20 presets</span>
+            <span id="preset-count" class="meta-badge">35 presets</span>
           </div>
         </div>
 
-        <!-- Search & Category Filters -->
         <div class="filter-toolbar">
           <input
             id="preset-search"
             type="search"
             class="search-input"
-            placeholder="Filter presets (e.g., orbit, 35mm, flash, drone)..."
+            placeholder="Filter presets (e.g., orbit, soul, fisheye, tilt, 35mm)..."
           />
           <div id="category-pills" class="category-pills" role="group" aria-label="Preset categories"></div>
         </div>
 
-        <!-- Ordered Multi-Move Queue Bar (Stage 2) -->
         <div id="sequence-bar" class="sequence-bar hidden">
           <div class="sequence-head">
             <span>Ordered Camera Chain (max 3):</span>
@@ -111,16 +104,119 @@
         <div id="preset-grid" class="preset-grid"></div>
       </section>
 
+      <!-- Lipsync Studio Panel -->
+      <section id="lipsync-panel" class="panel-section studio-card hidden">
+        <div class="section-header">
+          <h2>Lipsync Studio (Omni 1.2 Flash)</h2>
+          <span class="meta-badge">Audio-Sync</span>
+        </div>
+        <div class="form-row">
+          <label for="lipsync-dialogue">Spoken Dialogue / Script</label>
+          <textarea
+            id="lipsync-dialogue"
+            rows="2"
+            placeholder="Exact dialogue line (e.g., 'Selamat malam, ini baru permulaan.')..."
+          ></textarea>
+        </div>
+        <div class="controls-grid">
+          <div class="control-item">
+            <label for="select-lipsync-emotion">Emotion</label>
+            <select id="select-lipsync-emotion"></select>
+          </div>
+          <div class="control-item">
+            <label for="select-lipsync-framing">Framing</label>
+            <select id="select-lipsync-framing"></select>
+          </div>
+          <div class="control-item">
+            <label for="select-lipsync-voice">Voice &amp; Accent</label>
+            <select id="select-lipsync-voice"></select>
+          </div>
+          <div class="control-item">
+            <label for="lipsync-ambience">Ambience</label>
+            <input id="lipsync-ambience" type="text" class="compact-input" placeholder="e.g., soft rain outside" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Motion Control Studio Panel -->
+      <section id="motion-control-panel" class="panel-section studio-card hidden">
+        <div class="section-header">
+          <h2>Motion Control Transfer</h2>
+          <span class="meta-badge">Ref Video</span>
+        </div>
+        <div class="form-row">
+          <label for="input-motion-video">Reference Motion Video (Optional Local Preview)</label>
+          <div class="inline-row">
+            <label for="input-motion-video" class="btn-secondary compact-btn file-label">Load .mp4/.webm</label>
+            <input id="input-motion-video" type="file" accept="video/*" class="hidden" />
+            <span id="motion-video-meta" class="meta-badge">No video loaded</span>
+          </div>
+          <video id="motion-video-preview" class="motion-ref-video hidden" controls muted playsinline></video>
+        </div>
+        <div class="form-row">
+          <label for="motion-ref-desc">Choreography / Motion to Copy</label>
+          <textarea
+            id="motion-ref-desc"
+            rows="2"
+            placeholder="Describe body movement from reference video (e.g., 'Subject walks forward, spins jacket, looks sharply at camera')..."
+          ></textarea>
+        </div>
+        <div class="controls-grid">
+          <div class="control-item">
+            <label for="select-motion-mode">Scene Control</label>
+            <select id="select-motion-mode"></select>
+          </div>
+          <div class="control-item">
+            <label for="select-motion-cam">Camera Sync</label>
+            <select id="select-motion-cam"></select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Short Drama Multi-Shot Generator Panel -->
+      <section id="drama-panel" class="panel-section studio-card hidden">
+        <div class="section-header">
+          <h2>Short Drama Storyboard Builder</h2>
+          <span class="meta-badge">Multi-Shot</span>
+        </div>
+        <div class="form-row">
+          <label for="drama-premise">Story Premise / Scene Beat</label>
+          <textarea
+            id="drama-premise"
+            rows="2"
+            placeholder="e.g., 'Two rivals meet on a foggy Jakarta rooftop during midnight rain to exchange a drive'..."
+          ></textarea>
+        </div>
+        <div class="controls-grid">
+          <div class="control-item">
+            <label for="drama-cast">Cast / @Characters</label>
+            <input id="drama-cast" type="text" class="compact-input" placeholder="@aria_noir, @kenji" />
+          </div>
+          <div class="control-item">
+            <label for="select-drama-shots">Shot Count</label>
+            <select id="select-drama-shots">
+              <option value="3">3 Shots + Keyframe</option>
+              <option value="4" selected>4 Shots + Keyframe</option>
+              <option value="6">6 Shots + Keyframe</option>
+              <option value="8">8 Shots + Keyframe</option>
+            </select>
+          </div>
+        </div>
+        <button id="btn-generate-drama" type="button" class="btn-primary full-width">
+          Generate Full Short Drama Storyboard
+        </button>
+      </section>
+
       <!-- Scene / Subject Input + @Element Lock -->
-      <section class="panel-section">
+      <section id="subject-section" class="panel-section">
         <div class="section-header">
           <label for="subject-input">Scene &amp; Subject Direction</label>
           <button id="btn-clear-input" class="text-btn" type="button">Clear</button>
         </div>
         <textarea
           id="subject-input"
-          rows="3"
-          placeholder="Describe subject action or scene (e.g., 'Woman in obsidian trench coat walks across rain-slicked Tokyo crosswalk, turns calmly toward camera')..."
+          rows="2"
+          placeholder="Describe subject action or scene..."
         ></textarea>
         <div class="element-row">
           <label for="character-lock" class="sr-only">Character / @Element Lock</label>
@@ -128,10 +224,33 @@
             id="character-lock"
             type="text"
             class="compact-input"
-            placeholder="@Character / Element lock (optional, e.g., '@mina_soul, silver wristwatch')"
+            placeholder="@Character / Element lock (optional, e.g., '@mina_soul, silver watch')"
           />
         </div>
       </section>
+
+      <!-- Color Transfer & Reference Image Bridge -->
+      <details id="color-transfer-panel" class="panel-section accordion">
+        <summary class="accordion-summary">
+          <span>Color Transfer &amp; Ref Image Bridge</span>
+          <span id="ct-badge" class="meta-badge">None</span>
+        </summary>
+        <div class="accordion-body">
+          <div class="inline-row">
+            <label for="input-ref-image" class="btn-secondary compact-btn file-label">Load Ref Image</label>
+            <input id="input-ref-image" type="file" accept="image/*" class="hidden" />
+            <button id="btn-send-ref-image" class="pill-btn hidden" type="button">Send Ref to Flow</button>
+            <button id="btn-clear-ref-image" class="text-btn danger hidden" type="button">Clear</button>
+          </div>
+          <div id="ct-preview-wrap" class="ct-preview-wrap hidden">
+            <img id="ct-thumb" class="ct-thumb" alt="Color transfer reference" />
+            <div class="ct-info">
+              <div id="ct-swatches" class="ct-swatches"></div>
+              <div id="ct-summary" class="ct-summary"></div>
+            </div>
+          </div>
+        </div>
+      </details>
 
       <!-- Fine-Tuning Controls -->
       <section class="panel-section controls-grid">
@@ -195,7 +314,7 @@
       <!-- Collapsible Pro Optics & Film Setup (Cinema Studio 4.0) -->
       <details id="optics-panel" class="panel-section accordion">
         <summary class="accordion-summary">
-          <span>Pro Optics &amp; Film Setup</span>
+          <span>Pro Optics, Film &amp; 20 Palettes</span>
           <span id="optics-summary-badge" class="meta-badge">Auto</span>
         </summary>
         <div class="accordion-body">
@@ -213,7 +332,7 @@
               <select id="select-aperture"></select>
             </div>
             <div class="control-item">
-              <label for="select-palette">Color Palette</label>
+              <label for="select-palette">Color Palette (20)</label>
               <select id="select-palette"></select>
             </div>
             <div class="control-item">
@@ -225,6 +344,7 @@
               <select id="select-era"></select>
             </div>
           </div>
+          <div id="palette-swatch-bar" class="ct-swatches"></div>
           <div class="accordion-footer">
             <button id="btn-reset-optics" class="text-btn" type="button">Reset Optics to Auto</button>
           </div>
@@ -273,7 +393,7 @@
       </button>
     </footer>
 
-    <!-- History Drawer Overlay -->
+    <!-- History Drawer -->
     <aside id="history-drawer" class="drawer hidden" aria-label="Recent Generations">
       <div class="drawer-header">
         <h3>Recent Generations</h3>
@@ -285,7 +405,7 @@
       <div id="history-list" class="history-list"></div>
     </aside>
 
-    <!-- Storyboard / Shot List Drawer Overlay -->
+    <!-- Storyboard / Shot List Drawer -->
     <aside id="storyboard-drawer" class="drawer hidden" aria-label="Storyboard Shot List">
       <div class="drawer-header">
         <h3>Storyboard Shot List</h3>
@@ -298,7 +418,28 @@
       <div id="storyboard-list" class="history-list"></div>
     </aside>
 
-    <!-- Custom Preset Builder & Pack Export/Import Drawer -->
+    <!-- Editing Room Drawer -->
+    <aside id="editing-drawer" class="drawer hidden" aria-label="Editing Room">
+      <div class="drawer-header">
+        <h3>Editing Room <span id="edit-clip-count" class="meta-badge">0 clips</span></h3>
+        <div class="drawer-actions">
+          <button id="btn-clear-edit" class="text-btn danger" type="button">Clear</button>
+          <button id="btn-close-edit" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+      <div class="drawer-body">
+        <canvas id="edit-canvas" width="640" height="360" class="edit-canvas"></canvas>
+        <div class="edit-toolbar">
+          <label for="input-edit-clips" class="btn-secondary compact-btn file-label">+ Add Clips</label>
+          <input id="input-edit-clips" type="file" accept="video/*,image/*" multiple class="hidden" />
+          <button id="btn-play-edit" class="btn-secondary compact-btn" type="button">Play Edit</button>
+          <button id="btn-export-edit" class="btn-primary compact-btn" type="button">Export .webm</button>
+        </div>
+        <div id="edit-clip-list" class="edit-clip-list"></div>
+      </div>
+    </aside>
+
+    <!-- Custom Preset Builder Drawer -->
     <aside id="custom-preset-drawer" class="drawer hidden" aria-label="Custom Preset Builder">
       <div class="drawer-header">
         <h3 id="custom-drawer-title">Custom Preset Builder</h3>
@@ -370,10 +511,13 @@
                 <label for="cp-s1-category">Category</label>
                 <select id="cp-s1-category">
                   <option value="Cinema">Cinema</option>
-                  <option value="Editorial">Editorial</option>
-                  <option value="Retro">Retro</option>
-                  <option value="Commercial">Commercial</option>
-                  <option value="Night">Night</option>
+                  <option value="TikTok Core">TikTok Core</option>
+                  <option value="Instagram Aesthetics">Instagram Aesthetics</option>
+                  <option value="Camera Presets">Camera Presets</option>
+                  <option value="Beauty">Beauty</option>
+                  <option value="Mood">Mood</option>
+                  <option value="Surreal">Surreal</option>
+                  <option value="Graphic Art">Graphic Art</option>
                 </select>
               </div>
               <div class="form-row">
@@ -409,7 +553,7 @@
       </div>
     </aside>
 
-    <!-- Selector Binding Status Modal/Banner -->
+    <!-- Selector Binding Status Banner -->
     <div id="picker-banner" class="picker-banner hidden">
       <div class="picker-info">
         <strong>UI Binding Mode Active</strong>

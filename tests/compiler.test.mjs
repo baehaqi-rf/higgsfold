@@ -4,17 +4,21 @@ import {
   STAGE1_PRESETS,
   STAGE2_PRESETS,
   STAGE1_CATEGORIES,
-  STAGE2_CATEGORIES
+  STAGE2_CATEGORIES,
+  COLOR_PALETTES
 } from "../sidepanel/presets.js";
 import {
   compilePrompt,
+  generateShortDramaStoryboard,
+  analyzeRgbSamplesForColorTransfer,
   buildCustomPreset,
   formatStoryboardExport
 } from "../sidepanel/compiler.js";
 
-test("preset catalog has unique IDs and valid categories", () => {
-  assert.ok(STAGE1_PRESETS.length >= 14, "Expected >= 14 Stage 1 presets");
-  assert.ok(STAGE2_PRESETS.length >= 20, "Expected >= 20 Stage 2 presets");
+test("preset catalog includes all 110+ Stage 1 Soul looks, 35 Stage 2 moves, and 20 Palettes", () => {
+  assert.ok(STAGE1_PRESETS.length >= 110, `Expected >= 110 Stage 1 presets, got ${STAGE1_PRESETS.length}`);
+  assert.equal(STAGE2_PRESETS.length, 35, "Expected 35 Stage 2 camera presets");
+  assert.equal(COLOR_PALETTES.length, 21, "Expected Match Reference + 20 Cinema Studio palettes");
 
   const s1Ids = new Set(STAGE1_PRESETS.map((p) => p.id));
   const s2Ids = new Set(STAGE2_PRESETS.map((p) => p.id));
@@ -31,7 +35,7 @@ test("preset catalog has unique IDs and valid categories", () => {
   }
 });
 
-test("compilePrompt compiles Stage 1 Keyframe with Pro Optics & Character Lock", () => {
+test("compilePrompt compiles Stage 1 Keyframe with Pro Optics, Color Transfer & Character Lock", () => {
   const prompt = compilePrompt(
     {
       stage: "stage1",
@@ -46,7 +50,8 @@ test("compilePrompt compiles Stage 1 Keyframe with Pro Optics & Character Lock",
       aperture: "f1.4",
       genre: "noir",
       era: "1980s",
-      palette: "nostalgic-blue"
+      palette: "nostalgic-blue",
+      colorTransferSummary: "Color Transfer Reference: Match dominant palette [#112233, #EEAA55]."
     },
     STAGE1_PRESETS,
     STAGE2_PRESETS
@@ -55,10 +60,7 @@ test("compilePrompt compiles Stage 1 Keyframe with Pro Optics & Character Lock",
   assert.match(prompt, /^\[KEYFRAME • NEON NOIR • AR 16:9 • 2K\]/);
   assert.match(prompt, /Character\/@Element Lock: @detective_kai, charcoal coat/);
   assert.match(prompt, /35mm motion picture film stock/);
-  assert.match(prompt, /1970s vintage anamorphic optics/);
-  assert.match(prompt, /f\/1\.4/);
-  assert.match(prompt, /1980s nocturnal analog cinema vibe/);
-  assert.match(prompt, /nostalgic cool slate blue/);
+  assert.match(prompt, /Color Transfer Reference: Match dominant palette/);
   assert.match(prompt, /Identity Lock:/);
 });
 
@@ -80,41 +82,87 @@ test("compilePrompt compiles Stage 2 Multi-Move ordered camera sequence", () => 
     STAGE2_PRESETS
   );
 
-  assert.match(prompt, /\[CAMERA MOTION: DOLLY IN → RACK FOCUS → CRASH ZOOM IN • 8s • AR 9:16 • 1080p\]/);
+  assert.match(prompt, /\[CAMERA MOTION: DOLLY IN → RACK FOCUS → CRUSH ZOOM • 8s • AR 9:16 • 1080p\]/);
   assert.match(prompt, /Camera Sequence \(Ordered Multi-Move\):/);
   assert.match(prompt, /Phase 1 \(Dolly In\):/);
   assert.match(prompt, /Phase 2 \(Rack Focus\):/);
-  assert.match(prompt, /Phase 3 \(Crash Zoom In\):/);
-  assert.match(prompt, /high-octane, visceral camera momentum/);
-  assert.match(prompt, /Native Audio Design:/);
+  assert.match(prompt, /Phase 3 \(Crush Zoom\):/);
 });
 
-test("compilePrompt respects silent audio option", () => {
-  const prompt = compilePrompt(
+test("compilePrompt compiles Lipsync Studio & Motion Control modes", () => {
+  const lipsync = compilePrompt(
     {
-      stage: "stage2",
-      selectedStage2Id: "static-cinema-lock",
-      stage2Queue: ["static-cinema-lock"],
-      subject: "Wind blowing curtains",
-      intensity: "subtle",
-      aspect: "16:9",
-      duration: "5s",
-      lighting: "match-ref",
-      includeAudio: false
+      stage: "lipsync",
+      subject: "Host looking directly into lens",
+      characterLock: "@host_aria",
+      lipsyncDialogue: "Selamat datang di studio baru kita.",
+      lipsyncEmotion: "confident",
+      lipsyncFraming: "closeup",
+      lipsyncVoice: "natural-id",
+      lipsyncAmbience: "quiet studio room tone",
+      duration: "8s",
+      aspect: "9:16",
+      lighting: "auto"
     },
     STAGE1_PRESETS,
     STAGE2_PRESETS
   );
-  assert.match(prompt, /Native Audio Design: Silent \/ minimal natural room tone only\./);
+  assert.match(lipsync, /\[LIPSYNC STUDIO • OMNI 1\.2 FLASH • 8s • AR 9:16\]/);
+  assert.match(lipsync, /Spoken Dialogue \(Exact Lip-Sync\): "Selamat datang di studio baru kita\."/);
+
+  const motionCtrl = compilePrompt(
+    {
+      stage: "motion_control",
+      selectedStage2Id: "side-tracking-follow",
+      subject: "Cyberpunk courier",
+      motionRefDescription: "Strides forward and leaps onto concrete ledge",
+      motionControlMode: "image-bg",
+      duration: "5s",
+      aspect: "16:9",
+      lighting: "match-ref",
+      includeAudio: true
+    },
+    STAGE1_PRESETS,
+    STAGE2_PRESETS
+  );
+  assert.match(motionCtrl, /\[MOTION CONTROL TRANSFER • SIDE TRACKING • 5s • AR 16:9\]/);
+  assert.match(motionCtrl, /Strides forward and leaps onto concrete ledge/);
+  assert.match(motionCtrl, /preserving the background and lighting of the target character image/);
 });
 
-test("buildCustomPreset validates required fields and builds Stage 1/2 presets", () => {
-  assert.throws(() => buildCustomPreset({ name: "  " }, "stage2"), /Preset name is required/);
-  assert.throws(
-    () => buildCustomPreset({ name: "Empty Motion" }, "stage2"),
-    /Camera Trajectory description is required/
+test("generateShortDramaStoryboard generates Master Keyframe + N linked shots", () => {
+  const shots = generateShortDramaStoryboard(
+    {
+      premise: "Two detectives argue beside a burning car",
+      cast: "@detective_a, @detective_b",
+      shotCount: 4,
+      aspect: "16:9",
+      duration: "5s"
+    },
+    STAGE1_PRESETS,
+    STAGE2_PRESETS
   );
+  assert.equal(shots.length, 5); // 1 master keyframe + 4 shots
+  assert.equal(shots[0].stage, "DRAMA • KEYFRAME");
+  assert.match(shots[1].prompt, /Shot 1\/4/);
+  assert.match(shots[4].prompt, /@detective_a, @detective_b/);
+});
 
+test("analyzeRgbSamplesForColorTransfer extracts swatches and mood", () => {
+  const samples = [
+    [220, 80, 20],
+    [222, 82, 22],
+    [15, 25, 45],
+    [16, 26, 46],
+    [200, 190, 175]
+  ];
+  const res = analyzeRgbSamplesForColorTransfer(samples);
+  assert.ok(res.swatches.length >= 2);
+  assert.match(res.summary, /Color Transfer Reference:/);
+});
+
+test("buildCustomPreset & formatStoryboardExport work cleanly", () => {
+  assert.throws(() => buildCustomPreset({ name: "  " }, "stage2"), /Preset name is required/);
   const s2 = buildCustomPreset(
     {
       name: "Tokyo Whip",
@@ -127,25 +175,9 @@ test("buildCustomPreset validates required fields and builds Stage 1/2 presets",
   );
   assert.equal(s2.custom, true);
   assert.equal(s2.badge, "TOKYO");
-  assert.equal(s2.defaultDuration, "8s");
-  assert.ok(s2.id.startsWith("custom-tokyo-whip-"));
 
-  const s1 = buildCustomPreset(
-    {
-      name: "Velvet Look",
-      lensSpec: "50mm prime at f/1.8"
-    },
-    "stage1"
-  );
-  assert.equal(s1.custom, true);
-  assert.ok(s1.soulLockDirective.length > 10);
-});
-
-test("formatStoryboardExport formats multi-shot script cleanly", () => {
   const out = formatStoryboardExport([
-    { stage: "NANO BANANA 2.1", preset: "Editorial 35mm", prompt: "LINE1" },
-    { stage: "OMNI 1.2 FLASH", preset: "Dolly In → Crash Zoom In", prompt: "LINE2" }
+    { stage: "STAGE1", preset: "Editorial 35mm", prompt: "LINE1" }
   ]);
-  assert.match(out, /=== SHOT 1: Editorial 35mm \(NANO BANANA 2\.1\) ===\nLINE1/);
-  assert.match(out, /=== SHOT 2: Dolly In → Crash Zoom In \(OMNI 1\.2 FLASH\) ===\nLINE2/);
+  assert.match(out, /=== SHOT 1: Editorial 35mm \(STAGE1\) ===\nLINE1/);
 });

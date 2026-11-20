@@ -311,6 +311,13 @@
       log(`Flow ProseMirror input (${flowEditor.textContent.trim().length} chars)`);
     });
 
+    flowEditor.addEventListener("paste", (e) => {
+      const files = e.clipboardData?.files;
+      if (files && files.length > 0) {
+        log(`Flow ProseMirror image pasted: ${files[0].name} (${files[0].type})`);
+      }
+    });
+
     flowGenerateBtn.addEventListener("click", () => {
       log(`Flow Start generation clicked! Mode=${flowState.mode}, AR=${flowState.aspect}, Batch=${flowState.batch}`);
     });

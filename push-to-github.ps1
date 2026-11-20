@@ -1,6 +1,6 @@
 ﻿# HiggsFold — Commit & Push to GitHub (Windows PowerShell)
 param(
-  [string]$Message = "feat: HiggsFold v2.0 (REA Flow/Gemini bridge, Cinema Studio 4.0 optics & multi-move compiler)"
+  [string]$Message = "feat: HiggsFold v3.0 (113 Soul presets, 35 camera moves, 20 palettes, Lipsync, Motion Control, Short Drama, Color Transfer & Editing Room)"
 )
 
 $ErrorActionPreference = "Stop"

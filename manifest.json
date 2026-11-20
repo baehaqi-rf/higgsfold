@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "HiggsFold Studio — AI Director Side Panel",
-  "version": "2.0.0",
-  "description": "Higgsfield Cinema Studio 4.0-inspired 2-Stage AI Director Side Panel for Google Flow, Gemini & AI Studio (Nano Banana 2.1 Keyframe + Omni 1.2 Flash Multi-Move Compiler).",
+  "version": "3.0.0",
+  "description": "Full Higgsfield Cinema Studio 4.0, Soul (106+ looks), 35 Camera Moves, Lipsync, Motion Control, Short Drama, Color Transfer & Editing Room Side Panel for Google Flow, Gemini & AI Studio.",
   "permissions": [
     "sidePanel",
     "activeTab",
