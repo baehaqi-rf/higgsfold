@@ -20,6 +20,9 @@ import {
 const ANTI_MORPH_GUARDRAIL =
   "Maintain rigid anatomical consistency, single-subject identity lock, crisp lighting parallax, zero ghosting or limb morphing, and physically accurate cloth and motion momentum throughout the shot.";
 
+const KINETIC_TRANSFORM_GUARDRAIL =
+  "Preserve crisp edge fidelity, realistic surface lighting response, conservation of momentum, and clean motion-blur continuity throughout the kinetic transformation — zero muddy artifacts or background tearing.";
+
 function findOptionText(list, id) {
   const found = list.find((item) => item.id === id);
   return found?.text ? found.text.trim() : "";
@@ -124,12 +127,24 @@ export function estimateLipsyncPace(dialogue, duration = "5s") {
   };
 }
 
-function buildTemporalStage2Beats(selectedPresets, intensityText, durSec) {
+function buildTemporalStage2Beats(selectedPresets, intensityText, durSec, endObject = "") {
+  const endGoal = (endObject || "").trim();
+  const isTransform = selectedPresets.some((p) => p.transformMode);
+
   if (selectedPresets.length === 1) {
     const p = selectedPresets[0];
     const t1 = (durSec * 0.25).toFixed(1);
     const t2 = (durSec * 0.8).toFixed(1);
     const t3 = durSec.toFixed(1);
+
+    if (p.transformMode) {
+      return [
+        `0.0s–${t1}s: Anchor the opening state clearly in sharp focus with subtle anticipation tension.`,
+        `${t1}s–${t2}s: ${p.cameraTrajectory}${endGoal ? ` Morph directly into ${endGoal}.` : ""} Execute with ${intensityText}.`,
+        `${t2}s–${t3}s: Snap-settle decisively onto ${endGoal || "the final transformed hero object"}; ${p.physicsSpec}`
+      ].join(" ");
+    }
+
     return [
       `0.0s–${t1}s: Open cleanly on the subject with balanced foreground depth as ${p.name} momentum initiates.`,
       `${t1}s–${t2}s: ${p.cameraTrajectory} Execute with ${intensityText}.`,
@@ -141,9 +156,10 @@ function buildTemporalStage2Beats(selectedPresets, intensityText, durSec) {
   const phases = selectedPresets.map((p, idx) => {
     const start = (idx * seg).toFixed(1);
     const end = (idx === selectedPresets.length - 1 ? durSec : (idx + 1) * seg).toFixed(1);
-    return `${start}s–${end}s (${p.name}): ${p.cameraTrajectory}`;
+    const targetSuffix = p.transformMode && endGoal ? ` Target end state: ${endGoal}.` : "";
+    return `${start}s–${end}s (${p.name}): ${p.cameraTrajectory}${targetSuffix}`;
   });
-  return `${phases.join(" ")} Connect phases with fluid, uninterrupted camera handoff and ${intensityText}.`;
+  return `${phases.join(" ")} Connect phases with ${isTransform ? "seamless kinetic momentum" : "fluid, uninterrupted camera handoff"} and ${intensityText}.`;
 }
 
 /**
@@ -342,23 +358,39 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
   const audioJoined = Array.from(
     new Set(selectedPresets.map((p) => p.audioCue.trim()).filter(Boolean))
   ).join(" ");
+  const hasTransformMove = selectedPresets.some((p) => p.transformMode);
+  const activeGuardrail = hasTransformMove
+    ? KINETIC_TRANSFORM_GUARDRAIL
+    : ANTI_MORPH_GUARDRAIL;
+  const endObjText = (state.endObject || "").trim();
 
   if (proseMode) {
     const subjectText = buildProseSubject(
       state,
-      "Hero subject positioned clearly in the reference scene"
+      hasTransformMove
+        ? "Hero object in opening start frame"
+        : "Hero subject positioned clearly in the reference scene"
     );
-    const temporalBeats = buildTemporalStage2Beats(selectedPresets, intensityText, durSec);
+    const temporalBeats = buildTemporalStage2Beats(
+      selectedPresets,
+      intensityText,
+      durSec,
+      endObjText
+    );
     const lookParts = [opticsOverride, lightingObj.text, colorGrade, filmSetup]
       .filter(Boolean)
       .join(" ");
     const multiPhysics = selectedPresets.length > 1 ? physicsUnique : "";
+    const introPrefix = hasTransformMove && endObjText
+      ? `${durSec.toFixed(1)}s kinetic transformation shot (${state.aspect || "16:9"}): From ${subjectText} into ${endObjText}.`
+      : `${durSec.toFixed(1)}s cinema shot (${state.aspect || "16:9"}): ${subjectText}.`;
+
     const segments = [
-      `${durSec.toFixed(1)}s cinema shot (${state.aspect || "16:9"}): ${subjectText}.`,
+      introPrefix,
       temporalBeats,
       multiPhysics,
       lookParts,
-      useGuardrails ? ANTI_MORPH_GUARDRAIL : "",
+      useGuardrails ? activeGuardrail : "",
       state.includeAudio
         ? `Audio: ${audioJoined}`
         : `Audio: Silent / minimal natural room tone only.`
@@ -375,12 +407,12 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
 
   let trajectoryBlock;
   if (selectedPresets.length === 1) {
-    trajectoryBlock = `Camera Trajectory: ${selectedPresets[0].cameraTrajectory} Execute with ${intensityText}.`;
+    trajectoryBlock = `${hasTransformMove ? "Transformation Path" : "Camera Trajectory"}: ${selectedPresets[0].cameraTrajectory}${endObjText ? ` Target end state: ${endObjText}.` : ""} Execute with ${intensityText}.`;
   } else {
     const sequencedSteps = selectedPresets
       .map((p, idx) => `Phase ${idx + 1} (${p.name}): ${p.cameraTrajectory}`)
       .join(" ");
-    trajectoryBlock = `Camera Sequence (Ordered Multi-Move): ${sequencedSteps} Transition seamlessly across phases with ${intensityText}.`;
+    trajectoryBlock = `Camera Sequence (Ordered Multi-Move): ${sequencedSteps}${endObjText ? ` Target end state: ${endObjText}.` : ""} Transition seamlessly across phases with ${intensityText}.`;
   }
 
   const physicsParts = [physicsUnique, opticsOverride, lightingObj.text, colorGrade]
@@ -388,14 +420,16 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
     .join(" ");
 
   const blocks = [
-    `[CAMERA MOTION: ${titleNames} • ${state.duration} • AR ${state.aspect}${resolutionTag}]`,
-    `Scene Action: ${subjectText}.`,
+    `[${hasTransformMove ? "KINETIC VFX" : "CAMERA MOTION"}: ${titleNames} • ${state.duration} • AR ${state.aspect}${resolutionTag}]`,
+    endObjText && hasTransformMove
+      ? `Transform Transition: ${subjectText} → ${endObjText}.`
+      : `Scene Action: ${subjectText}.`,
     trajectoryBlock,
     `Physics & Continuity: ${physicsParts}`
   ];
 
   if (filmSetup) blocks.push(filmSetup);
-  if (useGuardrails) blocks.push(`Guardrail: ${ANTI_MORPH_GUARDRAIL}`);
+  if (useGuardrails) blocks.push(`Guardrail: ${activeGuardrail}`);
 
   if (state.includeAudio) {
     blocks.push(`Native Audio Design: ${audioJoined}`);

@@ -31,7 +31,7 @@
           <span class="hf-nav-badge badge-cyan">
             <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><path d="M10.56 5.11c.32 0 .61.2.73.5l1.04 2.72c.08.2.24.37.45.45l2.72 1.04c.3.12.5.4.5.73s-.2.61-.5.73l-2.72 1.04c-.2.08-.37.24-.45.45l-1.04 2.72a.78.78 0 0 1-.73.5.78.78 0 0 1-.73-.5l-1.04-2.72a.78.78 0 0 0-.45-.45L5.61 11.29a.78.78 0 0 1-.5-.73c0-.32.2-.61.5-.73l2.72-1.04c.2-.08.37-.24.45-.45l1.04-2.72c.12-.3.4-.5.73-.5ZM5.11 2c.19 0 .36.12.42.29l.54 1.41c.08.2.24.37.45.45l1.41.54c.17.07.29.24.29.42s-.12.36-.29.42l-1.41.54a.68.68 0 0 0-.45.45l-.54 1.41a.45.45 0 0 1-.42.29.45.45 0 0 1-.42-.29l-.54-1.41a.68.68 0 0 0-.45-.45L2.29 5.53A.45.45 0 0 1 2 5.11c0-.19.12-.36.29-.42l1.41-.54a.68.68 0 0 0 .45-.45l.54-1.41A.45.45 0 0 1 5.11 2Z" fill="currentColor"></path></svg>
           </span>
-          <span>Motion Studio (35)</span>
+          <span>Motion &amp; VFX (47)</span>
         </button>
         <button class="hf-nav-item" data-side-nav="stage1" type="button">
           <span class="hf-nav-badge badge-dark">
@@ -154,7 +154,7 @@
               </svg>
               <div>
                 <span class="stage-kicker">VIDEO • OMNI 1.2</span>
-                <span class="stage-name">Motion (35)</span>
+                <span class="stage-name">Motion &amp; VFX (47)</span>
               </div>
             </button>
             <button class="stage-tab" data-stage="stage1" role="tab" aria-selected="false" type="button">
@@ -185,7 +185,7 @@
               </span>
               <span class="hf-strip-meta">
                 <span class="hf-strip-kicker">References</span>
-                <span id="val-references" class="hf-strip-val">0/1</span>
+                <span id="val-references" class="hf-strip-val">0/2</span>
               </span>
             </button>
 
@@ -252,6 +252,15 @@
                     placeholder="Character / @Element lock (optional, e.g., '@mina_soul, black trench')"
                   />
                   <button id="btn-pick-soul" class="text-btn accent-link" type="button" title="Choose or save Soul character">@Vault</button>
+                </div>
+                <div id="end-object-row" class="hf-element-bar hidden">
+                  <span style="font-size:10px;font-weight:700;color:#d1fe17;">→ B</span>
+                  <input
+                    id="end-object-input"
+                    type="text"
+                    class="hf-inline-input"
+                    placeholder="Morph Target B (e.g., 'sleek chrome hypercar under rain')"
+                  />
                 </div>
               </div>
 
@@ -438,20 +447,31 @@
           <!-- Sub-panel: Camera Setup & Optics + Color Palettes + Lighting + Film Setup + References -->
           <div id="subpanel-references" class="hf-subpanel hidden">
             <div class="section-header">
-              <h2>References &amp; Color Transfer</h2>
+              <h2>Dual Keyframes (Start A → End B) &amp; Color Transfer</h2>
               <button class="text-btn close-subpanel" type="button">Done</button>
             </div>
             <div class="inline-row">
-              <label for="input-ref-image" class="btn-secondary compact-btn file-label">Load Ref Image</label>
+              <label for="input-ref-image" class="btn-secondary compact-btn file-label">Load Start Ref (A)</label>
               <input id="input-ref-image" type="file" accept="image/*" class="hidden" />
-              <button id="btn-send-ref-image" class="pill-btn hidden" type="button">Send Ref to Flow</button>
-              <button id="btn-clear-ref-image" class="text-btn danger hidden" type="button">Clear</button>
+              <label for="input-end-ref-image" class="btn-secondary compact-btn file-label">Load End Morph (B)</label>
+              <input id="input-end-ref-image" type="file" accept="image/*" class="hidden" />
+              <button id="btn-send-ref-image" class="pill-btn hidden" type="button">Send Ref (A) to Flow</button>
+              <button id="btn-send-dual-frames" class="pill-btn hidden" type="button">Send A→B to Flow</button>
+              <button id="btn-clear-ref-image" class="text-btn danger hidden" type="button">Clear A</button>
+              <button id="btn-clear-end-ref" class="text-btn danger hidden" type="button">Clear B</button>
             </div>
             <div id="ct-preview-wrap" class="ct-preview-wrap hidden">
-              <img id="ct-thumb" class="ct-thumb" alt="Color transfer reference" />
+              <img id="ct-thumb" class="ct-thumb" alt="Start keyframe reference" />
               <div class="ct-info">
                 <div id="ct-swatches" class="ct-swatches"></div>
                 <div id="ct-summary" class="ct-summary"></div>
+              </div>
+            </div>
+            <div id="end-ref-preview-wrap" class="ct-preview-wrap hidden">
+              <img id="end-ref-thumb" class="ct-thumb" alt="End keyframe morph target" />
+              <div class="ct-info">
+                <div style="font-size:10.5px;font-weight:700;color:#d1fe17;">END FRAME (B) — Kinetic Morph Destination</div>
+                <div id="end-ref-meta" class="ct-summary">Ready for Google Flow Frames Start→End interpolation.</div>
               </div>
             </div>
           </div>
@@ -503,12 +523,12 @@
           <!-- Primary Preset Grid Section (Camera Movements 35 / Keyframe & Soul 113) -->
           <div id="preset-library-section">
             <div class="section-header">
-              <h2 id="preset-heading">Camera Movement (35)</h2>
+              <h2 id="preset-heading">Camera &amp; Kinetic VFX (47)</h2>
               <div class="section-tools">
                 <button id="btn-toggle-sequence" class="mini-toggle hidden" type="button" title="Chain up to 3 camera moves in order">
                   Multi-Move: OFF
                 </button>
-                <span id="preset-count" class="meta-badge">35 presets</span>
+                <span id="preset-count" class="meta-badge">47 presets</span>
               </div>
             </div>
 
@@ -606,6 +626,34 @@
           <button id="btn-export-edit" class="btn-primary compact-btn" type="button">Export .webm</button>
         </div>
         <div id="edit-clip-list" class="edit-clip-list"></div>
+        <div class="pack-io-box">
+          <h4>Kinetic Object &amp; Text Layers (60fps Exact)</h4>
+          <div class="controls-grid" style="margin-bottom:6px;">
+            <input id="ov-text" type="text" class="compact-input" placeholder="Kinetic title / word (exact spelling)" />
+            <select id="ov-anim" class="compact-input">
+              <option value="pop-scale">Pop Scale (Spring)</option>
+              <option value="slide-up">Slide Up Reveal</option>
+              <option value="kinetic-slam">Kinetic Slam</option>
+              <option value="spin-fly">Spin Fly-In</option>
+              <option value="orbit-float">Orbit Float</option>
+              <option value="typewriter">Typewriter</option>
+            </select>
+          </div>
+          <div class="edit-nle-options" style="margin-bottom:6px;">
+            <select id="ov-pos" class="hf-chip-select">
+              <option value="center">Center</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+            </select>
+            <input id="ov-color" type="color" value="#d1fe17" title="Text color" style="width:28px;height:28px;border:none;border-radius:6px;background:transparent;cursor:pointer;" />
+            <input id="ov-start" type="number" step="0.1" min="0" value="0.2" class="compact-input" style="width:54px;" title="Start sec" />
+            <input id="ov-dur" type="number" step="0.1" min="0.4" value="2.5" class="compact-input" style="width:54px;" title="Duration sec" />
+            <button id="btn-add-ov-text" class="pill-btn" type="button">+ Text</button>
+            <label for="input-ov-object" class="btn-secondary compact-btn file-label">+ PNG Object</label>
+            <input id="input-ov-object" type="file" accept="image/*" class="hidden" />
+          </div>
+          <div id="edit-overlay-list" class="edit-clip-list"></div>
+        </div>
       </div>
     </aside>
 

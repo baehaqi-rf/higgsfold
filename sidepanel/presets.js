@@ -1,6 +1,6 @@
-// HiggsFold Studio v4.0 — Cinema Keyframes, Soul Looks & Camera Motion Catalog
+// HiggsFold Studio v4.0 — Cinema Keyframes, Soul Looks, Camera Motion & Kinetic VFX Catalog
 // - Stage 1: 8 Core Cinema Keyframes + 105 Soul Studio Presets (113 total)
-// - Stage 2: 35 Cinema Camera Movements & Dynamic Rigs
+// - Stage 2: 35 Cinema Camera Movements + 12 Kinetic Object/Typography VFX Presets (47 total)
 // - 20 Color Palettes, Camera Bodies, Lenses, Apertures, Genres, Eras, Lighting & Drama Arcs
 // - Lipsync Studio & Motion Control options
 
@@ -323,6 +323,7 @@ export const STAGE1_PRESETS = buildSoulPresets();
 
 export const STAGE2_CATEGORIES = [
   "All",
+  "Kinetic VFX",
   "Dynamic",
   "Orbit",
   "Aerial",
@@ -332,7 +333,7 @@ export const STAGE2_CATEGORIES = [
   "Handheld"
 ];
 
-// All 33 Cinema Studio 4.0 Camera Movements + FPV Drone Dive + Low-Angle Hero Track (35 total)
+// 35 Camera Movements + 12 Kinetic VFX / Object Transformation Presets (47 total)
 export const STAGE2_PRESETS = [
   {
     id: "crash-zoom-in",
@@ -718,6 +719,151 @@ export const STAGE2_PRESETS = [
     cameraTrajectory: "High-altitude gyro-stabilized cinema helicopter sweep banking majestically over skyline or terrain while tracking the distant subject/vehicle below.",
     physicsSpec: "Monumental atmospheric aerial parallax, long telephoto compression, wind-swept realism.",
     audioCue: "Deep distant atmospheric wind rush and grand cinematic outdoor soundscape."
+  },
+  // 12 Higgsfield-Grade Kinetic Object & VFX Transformation Presets
+  {
+    id: "liquid-metal-morph",
+    name: "Liquid Metal Morph",
+    badge: "MORPH",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-morph-liquid",
+    defaultDuration: "5s",
+    cameraTrajectory: "Start object liquefies into cohesive chrome/mercury surface tension with fluid ripple waves, flowing seamlessly and solidifying crisply into the target end object.",
+    physicsSpec: "Conservation of mass across fluid coalescence, crisp specular reflections over liquid curvature, zero muddy artifacts at transition peak.",
+    audioCue: "Sub-bass liquid mercury ripple building into a crisp metallic crystallization lock."
+  },
+  {
+    id: "shatter-reassemble",
+    name: "Shatter Reassemble",
+    badge: "VFX",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-shatter",
+    defaultDuration: "5s",
+    cameraTrajectory: "Primary object fractures along razor-clean geometric fault lines into hovering 3D shards that swirl in tight bullet-time orbit before magnetically snapping back into the transformed end object.",
+    physicsSpec: "Crisp rigid-body fragment trajectories, depth-of-field bokeh on foreground shards, clean surface lock upon reassembly.",
+    audioCue: "Crystalline glass fracture snap, suspended reverse air swirl, and tight percussive reassembly impact."
+  },
+  {
+    id: "match-cut-object-swap",
+    name: "Match-Cut Swap",
+    badge: "SWAP",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-whip-morph",
+    defaultDuration: "5s",
+    cameraTrajectory: "Explosive whip-spin or rapid geometric silhouette alignment accelerates into rotational motion blur at midpoint, swapping seamlessly from initial object to end object on exact screen position.",
+    physicsSpec: "Identical center-of-mass framing before and after swap, directional shutter streak masking transition peak, sharp bounce-free stop.",
+    audioCue: "High-speed whip whoosh synced to a sharp sub-hit exactly on the match-cut apex."
+  },
+  {
+    id: "kinetic-elastic-pop",
+    name: "Elastic Pop Transform",
+    badge: "KINETIC",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-scale-pop",
+    defaultDuration: "5s",
+    cameraTrajectory: "Snappy anticipation squash-and-stretch impulse launches the hero object upward and pops it mid-air into the evolved target object with crisp spring overshoot settling.",
+    physicsSpec: "Tactile animation squash-and-stretch arc, tight ease-out-back settle bounce, crisp lighting highlights across silhouette changes.",
+    audioCue: "Tactile rubberized spring pop, upward pitch riser, and clean crisp lock thud."
+  },
+  {
+    id: "magnetic-snap-assembly",
+    name: "Magnetic Assembly",
+    badge: "BUILD",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-assemble",
+    defaultDuration: "5s",
+    cameraTrajectory: "Exploded mechanical parts and modular surfaces fly inward from opposing vectors along sleek curved trajectories, snapping together piece by piece into the finished hero object.",
+    physicsSpec: "Precision parallax depth across converging parts, subtle spark or shadow contact as pieces lock flush without overlap clipping.",
+    audioCue: "Rapid sequential mechanical magnetic clicks culminating in a deep solid power-lock hum."
+  },
+  {
+    id: "particle-dust-dissolve",
+    name: "Particle Vortex Morph",
+    badge: "PARTICLE",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-dissolve-particles",
+    defaultDuration: "5s",
+    cameraTrajectory: "Sweeping invisible wind front dissolves the initial object into luminous micro-particles and glowing embers that spiral across frame and condense cleanly into the target object.",
+    physicsSpec: "Coherent directional wind curl noise, volumetric light scattering through swirling particle cloud, sharp solid edges after reformation.",
+    audioCue: "Granular crystalline sand swirl panning wide before compressing into a resonant harmonic chime."
+  },
+  {
+    id: "origami-unfold-reveal",
+    name: "Origami Fold Unwrap",
+    badge: "FOLD",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-origami-unfold",
+    defaultDuration: "5s",
+    cameraTrajectory: "Surfaces crease cleanly along architectural planes and unfold outward step by step like precision kinetic origami, unveiling the completely transformed end object underneath.",
+    physicsSpec: "Crisp flat-plane hinge motion, sharp cast shadows across folding flaps, spotless texture preservation on both sides.",
+    audioCue: "Crisp layered paper-and-composite folding snaps with subtle airy spatial room tone."
+  },
+  {
+    id: "data-glitch-swap",
+    name: "Chromatic Glitch Swap",
+    badge: "GLITCH",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-glitch-swap",
+    defaultDuration: "5s",
+    cameraTrajectory: "Brief high-frequency digital scanline tear and RGB chromatic slice displacement ripples across the hero object, snapping it cleanly into its alternate cybernetic/evolved state.",
+    physicsSpec: "Sharp rectangular pixel-block displacement bursts confined to transition beats while surrounding lighting stays grounded.",
+    audioCue: "Tight digital granular stutter glitch snapping sharply back to clean analog bass."
+  },
+  {
+    id: "gravity-drop-impact",
+    name: "Gravity Slam Morph",
+    badge: "IMPACT",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-crane-down",
+    defaultDuration: "5s",
+    cameraTrajectory: "Object drops from elevated frame with heavy acceleration, slamming onto ground surface with micro camera shake and shockwave ripple that instantaneously transforms it into the new form.",
+    physicsSpec: "Authentic weight acceleration, micro floor dust puff at impact frame, subtle shockwave refraction radiating outward.",
+    audioCue: "Short falling wind rush into a seismic sub-bass slam and metallic ring settle."
+  },
+  {
+    id: "molten-glass-flow",
+    name: "Molten Glass Morph",
+    badge: "FLUID",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-melt-form",
+    defaultDuration: "8s",
+    cameraTrajectory: "Initial object softens into glowing translucent amber/molten glass that stretches organically with thick surface tension before cooling and hardening into the final sculpted form.",
+    physicsSpec: "Internal subsurface caustics, smooth glossy specular wrap, coherent heat haze cooling into razor-sharp glass/solid facets.",
+    audioCue: "Warm crackling glass-kiln drone transitioning into a crystalline chime as form solidifies."
+  },
+  {
+    id: "vortex-portal-warp",
+    name: "Vortex Portal Shift",
+    badge: "WARP",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-portal-warp",
+    defaultDuration: "5s",
+    cameraTrajectory: "Foreground object pulls into a swirling centripetal dimensional ripple at center frame, flipping inside-out cleanly as the target end object emerges forward from the vortex.",
+    physicsSpec: "Smooth radial spiral distortion centered on hero axis, zero background tearing outside immediate portal ring.",
+    audioCue: "Reversed suction vacuum sweep snapping forward with a rich stereo dimensional bloom."
+  },
+  {
+    id: "kinetic-typography-punch",
+    name: "3D Kinetic Typo Punch",
+    badge: "TYPO",
+    category: "Kinetic VFX",
+    transformMode: true,
+    motionPreview: "preview-kinetic-type",
+    defaultDuration: "5s",
+    cameraTrajectory: "Large 3D sculpted typography words punch forward along the Z-axis with rhythmic ease-out slams and dynamic camera counter-whips synced cleanly alongside the hero object.",
+    physicsSpec: "Bold chunky sans-serif letterforms with thick bevels, crisp studio rim light, zero warped characters during deceleration lock.",
+    audioCue: "Punchy trailer-style drum hits aligned tightly to each word slam."
   }
 ];
 

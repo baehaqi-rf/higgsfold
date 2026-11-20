@@ -71,13 +71,232 @@ export function computeDrawRect(srcW, srcH, dstW, dstH, fitMode = "cover") {
   };
 }
 
+export function evaluateEasing(type, rawT) {
+  const t = Math.max(0, Math.min(1, Number(rawT) || 0));
+  switch (type) {
+    case "easeOutCubic":
+      return 1 - Math.pow(1 - t, 3);
+    case "easeOutBack": {
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+    case "easeOutExpo":
+      return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+    case "springElastic": {
+      if (t === 0 || t === 1) return t;
+      return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1;
+    }
+    case "linear":
+    default:
+      return t;
+  }
+}
+
+export function computeOverlayTransform(overlay, timelineSec, canvasW = 1280, canvasH = 720) {
+  const startSec = Math.max(0, Number(overlay.startSec) || 0);
+  const durSec = Math.max(0.3, Number(overlay.durSec) || 2.5);
+  const tNow = Number(timelineSec) || 0;
+
+  if (tNow < startSec || tNow > startSec + durSec) {
+    return {
+      visible: false,
+      opacity: 0,
+      x: canvasW / 2,
+      y: canvasH / 2,
+      scale: 1,
+      rotationRad: 0,
+      charRevealRatio: 1
+    };
+  }
+
+  const localT = tNow - startSec;
+  const enterDur = Math.min(0.48, durSec * 0.35);
+  const exitDur = Math.min(0.24, durSec * 0.2);
+  const enterProg = Math.min(1, localT / Math.max(0.05, enterDur));
+
+  let opacity = 1;
+  if (localT < 0.1) opacity = localT / 0.1;
+  else if (durSec - localT < exitDur) opacity = Math.max(0, (durSec - localT) / exitDur);
+
+  const posMap = { top: 0.2, center: 0.5, bottom: 0.82 };
+  const x = canvasW / 2;
+  let y = canvasH * (posMap[overlay.position] ?? 0.5);
+  let scale = 1;
+  let rotationRad = 0;
+  let charRevealRatio = 1;
+
+  switch (overlay.anim || "pop-scale") {
+    case "slide-up": {
+      const e = evaluateEasing("easeOutCubic", enterProg);
+      y += (1 - e) * canvasH * 0.16;
+      break;
+    }
+    case "kinetic-slam": {
+      const e = evaluateEasing("easeOutExpo", enterProg);
+      scale = 2.35 - 1.35 * e;
+      rotationRad = (1 - e) * -0.12;
+      break;
+    }
+    case "spin-fly": {
+      const e = evaluateEasing("easeOutBack", enterProg);
+      scale = Math.max(0.05, e);
+      rotationRad = (1 - e) * Math.PI;
+      break;
+    }
+    case "orbit-float": {
+      const e = evaluateEasing("easeOutCubic", enterProg);
+      scale = e;
+      y += Math.sin(localT * 3.6) * 14;
+      rotationRad = Math.cos(localT * 2.4) * 0.08;
+      break;
+    }
+    case "typewriter": {
+      charRevealRatio = Math.min(1, localT / Math.max(0.25, durSec * 0.65));
+      break;
+    }
+    case "pop-scale":
+    default: {
+      const e = evaluateEasing("easeOutBack", enterProg);
+      scale = 0.22 + 0.78 * e;
+      break;
+    }
+  }
+
+  return {
+    visible: true,
+    opacity: Math.max(0, Math.min(1, opacity)),
+    x,
+    y,
+    scale,
+    rotationRad,
+    charRevealRatio
+  };
+}
+
+function drawKineticOverlays(ctx, overlays, timelineSec, width, height) {
+  if (!overlays || overlays.length === 0) return;
+  const scaleUnit = Math.min(width, height) / 720;
+
+  for (const ov of overlays) {
+    const tr = computeOverlayTransform(ov, timelineSec, width, height);
+    if (!tr.visible || tr.opacity <= 0.01) continue;
+
+    ctx.save();
+    ctx.globalAlpha = tr.opacity;
+    ctx.translate(tr.x, tr.y);
+    ctx.rotate(tr.rotationRad);
+    ctx.scale(tr.scale, tr.scale);
+
+    if (ov.kind === "object" && ov._imgEl) {
+      const im = ov._imgEl;
+      const baseSize = Math.round((Number(ov.sizePx) || 260) * scaleUnit);
+      const ratio = (im.naturalWidth || 1) / (im.naturalHeight || 1);
+      const drawW = ratio >= 1 ? baseSize : baseSize * ratio;
+      const drawH = ratio >= 1 ? baseSize / ratio : baseSize;
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = 18;
+      ctx.drawImage(im, -drawW / 2, -drawH / 2, drawW, drawH);
+    } else if (ov.text) {
+      const rawText = String(ov.text);
+      const shownCount = Math.max(1, Math.ceil(rawText.length * tr.charRevealRatio));
+      const shownText = rawText.slice(0, shownCount);
+      const fontSize = Math.max(20, Math.round((Number(ov.sizePx) || 64) * scaleUnit));
+      ctx.font = `900 ${fontSize}px "Space Grotesk", "Inter", system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.1));
+      ctx.strokeStyle = "rgba(8, 8, 12, 0.85)";
+      ctx.strokeText(shownText, 0, 0);
+      ctx.fillStyle = ov.color || "#d1fe17";
+      ctx.fillText(shownText, 0, 0);
+    }
+
+    ctx.restore();
+  }
+}
+
 export function createEditingRoomController(els, showToast) {
   const clips = [];
+  const overlays = [];
   let isPlaying = false;
   let stopRequested = false;
   let activeVideo = null;
   let activeRafId = 0;
   let activeRecorder = null;
+
+  function renderOverlays() {
+    if (!els.overlayList) return;
+    els.overlayList.innerHTML = "";
+    if (overlays.length === 0) return;
+
+    overlays.forEach((ov, idx) => {
+      const row = document.createElement("div");
+      row.className = "edit-clip-row";
+      const meta = document.createElement("div");
+      meta.className = "edit-clip-meta";
+      const title = document.createElement("div");
+      title.className = "edit-clip-title";
+      title.textContent =
+        ov.kind === "object"
+          ? `OBJ #${idx + 1}: ${ov.label || "PNG Object"} (${ov.anim})`
+          : `TXT #${idx + 1}: "${ov.text}" (${ov.anim})`;
+      const sub = document.createElement("div");
+      sub.className = "edit-clip-sub";
+      sub.textContent = `Start ${ov.startSec}s • Dur ${ov.durSec}s • ${ov.position || "center"}`;
+      meta.append(title, sub);
+
+      const rmBtn = document.createElement("button");
+      rmBtn.type = "button";
+      rmBtn.className = "text-btn danger";
+      rmBtn.textContent = "×";
+      rmBtn.addEventListener("click", () => {
+        if (ov.revokeUrl && ov.imageSrc?.startsWith("blob:")) URL.revokeObjectURL(ov.imageSrc);
+        overlays.splice(idx, 1);
+        renderOverlays();
+      });
+
+      row.append(meta, rmBtn);
+      els.overlayList.appendChild(row);
+    });
+  }
+
+  async function addOverlay(config) {
+    const entry = {
+      id: `ov-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      kind: config.kind === "object" ? "object" : "text",
+      text: (config.text || "").trim(),
+      label: (config.label || "").trim(),
+      imageSrc: config.imageSrc || "",
+      revokeUrl: Boolean(config.revokeUrl),
+      anim: config.anim || "pop-scale",
+      color: config.color || "#d1fe17",
+      position: config.position || "center",
+      sizePx: Number(config.sizePx) || (config.kind === "object" ? 260 : 68),
+      startSec: Math.max(0, Number(config.startSec) || 0),
+      durSec: Math.max(0.4, Number(config.durSec) || 2.5),
+      _imgEl: null
+    };
+
+    if (entry.kind === "object" && entry.imageSrc) {
+      entry._imgEl = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.crossOrigin = "anonymous";
+        im.onload = () => resolve(im);
+        im.onerror = () => reject(new Error("Could not decode PNG/object layer"));
+        im.src = entry.imageSrc;
+      });
+    }
+
+    overlays.push(entry);
+    renderOverlays();
+    showToast(
+      entry.kind === "object"
+        ? `Added Kinetic Object layer (${entry.anim})`
+        : `Added Kinetic Text "${entry.text}"`
+    );
+    return entry;
+  }
 
   function renderClips() {
     els.clipList.innerHTML = "";
@@ -283,7 +502,15 @@ export function createEditingRoomController(els, showToast) {
   }
 
   async function renderClipToCanvas(clip, ctx, width, height, options) {
-    const { fitMode, crossfadeSec, prevFrameCanvas, audioCtx, audioDest, speakerGain } = options;
+    const {
+      fitMode,
+      crossfadeSec,
+      prevFrameCanvas,
+      audioCtx,
+      audioDest,
+      speakerGain,
+      timelineOffsetSec = 0
+    } = options;
     const bounds = validateTrimBounds(clip.inSec, clip.outSec, clip.durationSec);
 
     if (clip.kind === "image") {
@@ -309,6 +536,7 @@ export function createEditingRoomController(els, showToast) {
           const elapsedSec = (now - startTs) / 1000;
           const alpha = crossfadeSec > 0 ? Math.min(1, elapsedSec / crossfadeSec) : 1;
           drawWithCrossfade(ctx, img, iw, ih, width, height, fitMode, prevFrameCanvas, alpha);
+          drawKineticOverlays(ctx, overlays, timelineOffsetSec + elapsedSec, width, height);
           if (now - startTs >= durMs) {
             activeRafId = 0;
             resolve();
@@ -318,7 +546,7 @@ export function createEditingRoomController(els, showToast) {
         };
         activeRafId = requestAnimationFrame(tick);
       });
-      return;
+      return bounds.trimDurSec;
     }
 
     // Video clip with audio muxing & Trim In/Out bounds
@@ -382,15 +610,45 @@ export function createEditingRoomController(els, showToast) {
         const elapsedInClip = Math.max(0, video.currentTime - bounds.inSec);
         const alpha = crossfadeSec > 0 ? Math.min(1, elapsedInClip / crossfadeSec) : 1;
         drawWithCrossfade(ctx, video, vw, vh, width, height, fitMode, prevFrameCanvas, alpha);
+        drawKineticOverlays(ctx, overlays, timelineOffsetSec + elapsedInClip, width, height);
         activeRafId = requestAnimationFrame(drawFrame);
       };
       activeRafId = requestAnimationFrame(drawFrame);
     });
+    return bounds.trimDurSec;
+  }
+
+  async function renderOverlayOnlyStage(ctx, width, height, durSec) {
+    const startTs = performance.now();
+    const durMs = Math.max(1000, durSec * 1000);
+    await new Promise((resolve) => {
+      const tick = (now) => {
+        if (stopRequested) {
+          activeRafId = 0;
+          resolve();
+          return;
+        }
+        const elapsedSec = (now - startTs) / 1000;
+        const grad = ctx.createRadialGradient(width * 0.5, height * 0.45, 20, width * 0.5, height * 0.5, width * 0.75);
+        grad.addColorStop(0, "#14191f");
+        grad.addColorStop(1, "#050508");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+        drawKineticOverlays(ctx, overlays, elapsedSec, width, height);
+        if (now - startTs >= durMs) {
+          activeRafId = 0;
+          resolve();
+          return;
+        }
+        activeRafId = requestAnimationFrame(tick);
+      };
+      activeRafId = requestAnimationFrame(tick);
+    });
   }
 
   async function playOrExport(record = false) {
-    if (clips.length === 0) {
-      showToast("Add at least 1 clip first.", true);
+    if (clips.length === 0 && overlays.length === 0) {
+      showToast("Add at least 1 clip or Kinetic Overlay first.", true);
       return;
     }
     if (isPlaying) {
@@ -414,10 +672,12 @@ export function createEditingRoomController(els, showToast) {
     canvas.height = dims.height;
     const ctx = canvas.getContext("2d");
 
+    const playBtnEl = els.btnPlay || els.playBtn;
+    const exportBtnEl = els.btnExport || els.exportBtn;
     isPlaying = true;
     stopRequested = false;
-    els.playBtn.textContent = "■ Stop";
-    els.exportBtn.disabled = true;
+    if (playBtnEl) playBtnEl.textContent = "■ Stop";
+    if (exportBtnEl) exportBtnEl.disabled = true;
 
     let audioCtx = null;
     let audioDest = null;
@@ -468,20 +728,31 @@ export function createEditingRoomController(els, showToast) {
         prevFrameCanvas.height = dims.height;
       }
 
-      for (let i = 0; i < clips.length; i += 1) {
-        if (stopRequested) break;
-        await renderClipToCanvas(clips[i], ctx, dims.width, dims.height, {
-          fitMode,
-          crossfadeSec: i > 0 ? crossfadeSec : 0,
-          prevFrameCanvas: i > 0 ? prevFrameCanvas : null,
-          audioCtx,
-          audioDest,
-          speakerGain
-        });
-        if (prevFrameCanvas && !stopRequested) {
-          const pCtx = prevFrameCanvas.getContext("2d");
-          pCtx.clearRect(0, 0, dims.width, dims.height);
-          pCtx.drawImage(canvas, 0, 0, dims.width, dims.height);
+      if (clips.length === 0) {
+        const maxOvEnd = overlays.reduce(
+          (mx, o) => Math.max(mx, (o.startSec || 0) + (o.durSec || 1.5)),
+          1.2
+        );
+        await renderOverlayOnlyStage(ctx, dims.width, dims.height, maxOvEnd);
+      } else {
+        let timelineOffsetSec = 0;
+        for (let i = 0; i < clips.length; i += 1) {
+          if (stopRequested) break;
+          const playedDur = await renderClipToCanvas(clips[i], ctx, dims.width, dims.height, {
+            fitMode,
+            crossfadeSec: i > 0 ? crossfadeSec : 0,
+            prevFrameCanvas: i > 0 ? prevFrameCanvas : null,
+            audioCtx,
+            audioDest,
+            speakerGain,
+            timelineOffsetSec
+          });
+          timelineOffsetSec += playedDur || 0;
+          if (prevFrameCanvas && !stopRequested) {
+            const pCtx = prevFrameCanvas.getContext("2d");
+            pCtx.clearRect(0, 0, dims.width, dims.height);
+            pCtx.drawImage(canvas, 0, 0, dims.width, dims.height);
+          }
         }
       }
 
@@ -513,11 +784,21 @@ export function createEditingRoomController(els, showToast) {
       }
       isPlaying = false;
       stopRequested = false;
-      els.playBtn.textContent = "▶ Preview Edit";
-      els.exportBtn.disabled = false;
+      if (playBtnEl) playBtnEl.textContent = "▶ Preview Edit";
+      if (exportBtnEl) exportBtnEl.disabled = false;
     }
   }
 
   renderClips();
-  return { addFiles, addExternalClip, playOrExport, renderClips, getClips: () => clips };
+  renderOverlays();
+  return {
+    addFiles,
+    addExternalClip,
+    addOverlay,
+    renderOverlays,
+    getOverlays: () => overlays,
+    playOrExport,
+    renderClips,
+    getClips: () => clips
+  };
 }

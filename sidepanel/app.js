@@ -52,6 +52,7 @@ const WORKSPACE_PERSIST_FIELDS = [
   "sequenceMode",
   "subject",
   "characterLock",
+  "endObject",
   "intensity",
   "aspect",
   "lighting",
@@ -92,6 +93,7 @@ const state = {
   selectedCategory: "All",
   subject: "",
   characterLock: "",
+  endObject: "",
   intensity: "cinematic",
   aspect: "16:9",
   lighting: "match-ref",
@@ -111,6 +113,9 @@ const state = {
   refImageDataUrl: "",
   refImageName: "",
   refImageMime: "",
+  endRefImageDataUrl: "",
+  endRefImageName: "",
+  endRefImageMime: "",
   lipsyncDialogue: "",
   lipsyncEmotion: "calm",
   lipsyncFraming: "closeup",
@@ -167,6 +172,8 @@ const el = {
   lightingVisualGrid: document.getElementById("lighting-visual-grid"),
   subjectInput: document.getElementById("subject-input"),
   characterLock: document.getElementById("character-lock"),
+  endObjectRow: document.getElementById("end-object-row"),
+  endObjectInput: document.getElementById("end-object-input"),
   btnPickSoul: document.getElementById("btn-pick-soul"),
   btnClearInput: document.getElementById("btn-clear-input"),
   // Lipsync
@@ -194,14 +201,20 @@ const el = {
   selectDramaArc: document.getElementById("select-drama-arc"),
   selectDramaShots: document.getElementById("select-drama-shots"),
   btnGenerateDrama: document.getElementById("btn-generate-drama"),
-  // Color Transfer
+  // Color Transfer & Dual Keyframe References
   inputRefImage: document.getElementById("input-ref-image"),
+  inputEndRefImage: document.getElementById("input-end-ref-image"),
   btnSendRefImage: document.getElementById("btn-send-ref-image"),
+  btnSendDualFrames: document.getElementById("btn-send-dual-frames"),
   btnClearRefImage: document.getElementById("btn-clear-ref-image"),
+  btnClearEndRef: document.getElementById("btn-clear-end-ref"),
   ctPreviewWrap: document.getElementById("ct-preview-wrap"),
   ctThumb: document.getElementById("ct-thumb"),
   ctSwatches: document.getElementById("ct-swatches"),
   ctSummary: document.getElementById("ct-summary"),
+  endRefPreviewWrap: document.getElementById("end-ref-preview-wrap"),
+  endRefThumb: document.getElementById("end-ref-thumb"),
+  endRefMeta: document.getElementById("end-ref-meta"),
   // Controls & Optics
   selectIntensity: document.getElementById("select-intensity"),
   selectAspect: document.getElementById("select-aspect"),
@@ -267,6 +280,15 @@ const el = {
   btnExportEdit: document.getElementById("btn-export-edit"),
   editClipList: document.getElementById("edit-clip-list"),
   editClipCount: document.getElementById("edit-clip-count"),
+  editOverlayList: document.getElementById("edit-overlay-list"),
+  ovText: document.getElementById("ov-text"),
+  ovAnim: document.getElementById("ov-anim"),
+  ovPos: document.getElementById("ov-pos"),
+  ovColor: document.getElementById("ov-color"),
+  ovStart: document.getElementById("ov-start"),
+  ovDur: document.getElementById("ov-dur"),
+  btnAddOvText: document.getElementById("btn-add-ov-text"),
+  inputOvObject: document.getElementById("input-ov-object"),
   // Grab Drawer
   grabDrawer: document.getElementById("grab-drawer"),
   grabList: document.getElementById("grab-list"),
@@ -382,7 +404,8 @@ function updateLipsyncPaceBadge() {
 }
 
 function updateTopStripLabels() {
-  el.valReferences.textContent = state.refImageDataUrl ? "1/1" : "0/1";
+  const refCount = (state.refImageDataUrl ? 1 : 0) + (state.endRefImageDataUrl ? 1 : 0);
+  el.valReferences.textContent = `${refCount}/2`;
 
   const eraLabel = state.era !== "auto" ? state.era : "";
   const genreLabel = state.genre !== "auto" ? FILM_GENRES.find((g) => g.id === state.genre)?.label : "";
@@ -428,6 +451,7 @@ function applyReferencePreview(result) {
   el.ctPreviewWrap.classList.remove("hidden");
   el.btnSendRefImage.classList.remove("hidden");
   el.btnClearRefImage.classList.remove("hidden");
+  el.btnSendDualFrames?.classList.toggle("hidden", !state.endRefImageDataUrl);
   state.manualOverride = false;
   updateCompiledOutput();
 }
@@ -548,6 +572,16 @@ function updateModeVisibility() {
   el.controlDuration.classList.toggle("hidden", !isDurationVisible);
   el.toggleAudioWrap.classList.toggle("hidden", !isVideoControls);
   el.selectFlowSubmode?.classList.toggle("hidden", state.stage === "stage1");
+
+  const activeStage2HasTransform =
+    state.stage === "stage2" &&
+    (state.stage2Queue || [state.selectedStage2Id]).some((id) =>
+      getStage2All().find((p) => p.id === id)?.transformMode
+    );
+  el.endObjectRow?.classList.toggle(
+    "hidden",
+    !(activeStage2HasTransform || Boolean(state.endRefImageDataUrl))
+  );
 
   el.modeBtns.forEach((b) => {
     const active = b.dataset.stage === state.stage;
@@ -709,8 +743,8 @@ function renderPresets() {
   });
 
   el.presetHeading.textContent = isVideo
-    ? "Camera Movement (35)"
-    : "Keyframe & Soul (113)";
+    ? `Camera & Kinetic VFX (${fullList.length})`
+    : `Keyframe & Soul (${fullList.length})`;
   el.presetCount.textContent = `${filtered.length}/${fullList.length} presets`;
 
   renderSequenceBar();
@@ -1010,9 +1044,10 @@ function isImageStylePrompt(promptText) {
 
 async function syncFlowSettings(tabId, promptOverride = "") {
   const isImagePrompt = isImageStylePrompt(promptOverride || el.compiledPreview.value);
+  const effectiveSubMode = state.endRefImageDataUrl ? "Frames" : state.flowSubMode;
   const payload = {
     mode: isImagePrompt ? "Image" : "Video",
-    videoSubMode: isImagePrompt ? undefined : state.flowSubMode,
+    videoSubMode: isImagePrompt ? undefined : effectiveSubMode,
     aspectRatio: state.aspect,
     batchCount: state.batchCount,
     modelHints: isImagePrompt
@@ -1326,6 +1361,7 @@ const editingController = createEditingRoomController(
     btnClear: el.btnClearEdit,
     clipList: el.editClipList,
     clipCount: el.editClipCount,
+    overlayList: el.editOverlayList,
     exportAspect: el.selectEditAspect,
     fitMode: el.selectEditFit,
     crossfadeToggle: el.chkEditCrossfade
@@ -1651,11 +1687,19 @@ el.characterLock.addEventListener("input", (e) => {
   updateCompiledOutput();
 });
 
+el.endObjectInput?.addEventListener("input", (e) => {
+  state.endObject = e.target.value;
+  state.manualOverride = false;
+  updateCompiledOutput();
+});
+
 el.btnClearInput.addEventListener("click", () => {
   el.subjectInput.value = "";
   el.characterLock.value = "";
+  if (el.endObjectInput) el.endObjectInput.value = "";
   state.subject = "";
   state.characterLock = "";
+  state.endObject = "";
   state.manualOverride = false;
   updateCompiledOutput();
 });
@@ -1789,6 +1833,7 @@ el.btnClearRefImage.addEventListener("click", () => {
   el.ctPreviewWrap.classList.add("hidden");
   el.btnSendRefImage.classList.add("hidden");
   el.btnClearRefImage.classList.add("hidden");
+  el.btnSendDualFrames?.classList.add("hidden");
   state.manualOverride = false;
   updateCompiledOutput();
 });
@@ -1800,6 +1845,59 @@ el.btnSendRefImage.addEventListener("click", async () => {
     state.refImageName,
     state.refImageMime
   );
+});
+
+el.inputEndRefImage?.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const dataUrl = await compressImageToWebP(file, 1024, 0.88);
+    state.endRefImageDataUrl = dataUrl;
+    state.endRefImageName = file.name;
+    state.endRefImageMime = "image/webp";
+    el.endRefThumb.src = dataUrl;
+    el.endRefMeta.textContent = `${file.name} — ready for Flow Frames Start→End morph.`;
+    el.endRefPreviewWrap.classList.remove("hidden");
+    el.btnClearEndRef.classList.remove("hidden");
+    el.btnSendDualFrames?.classList.toggle("hidden", !state.refImageDataUrl);
+    updateCompiledOutput();
+    showToast("End Morph Frame (B) loaded!");
+  } catch (err) {
+    showToast(err?.message || "Could not load End Morph Frame");
+  } finally {
+    el.inputEndRefImage.value = "";
+  }
+});
+
+el.btnClearEndRef?.addEventListener("click", () => {
+  state.endRefImageDataUrl = "";
+  state.endRefImageName = "";
+  state.endRefImageMime = "";
+  el.endRefPreviewWrap.classList.add("hidden");
+  el.btnClearEndRef.classList.add("hidden");
+  el.btnSendDualFrames?.classList.add("hidden");
+  updateCompiledOutput();
+});
+
+el.btnSendDualFrames?.addEventListener("click", async () => {
+  if (!state.refImageDataUrl || !state.endRefImageDataUrl) {
+    showToast("Load both Start Frame (A) and End Frame (B) first");
+    return;
+  }
+  const ok1 = await sendImagePayloadToActiveTab(
+    state.refImageDataUrl,
+    state.refImageName || "start_frame.png",
+    state.refImageMime || "image/png"
+  );
+  await new Promise((r) => setTimeout(r, 220));
+  const ok2 = await sendImagePayloadToActiveTab(
+    state.endRefImageDataUrl,
+    state.endRefImageName || "end_frame.webp",
+    state.endRefImageMime || "image/webp"
+  );
+  if (ok1 && ok2) {
+    showToast("Attached Start (A) + End (B) Frames to Flow!");
+  }
 });
 
 // Select Controls
@@ -2087,16 +2185,63 @@ el.btnPlayEdit.addEventListener("click", () => editingController.playOrExport(fa
 el.btnExportEdit.addEventListener("click", () => editingController.playOrExport(true));
 el.btnClearEdit.addEventListener("click", () => {
   const list = editingController.getClips();
-  if (!list.length) return;
+  const ovList = editingController.getOverlays();
+  if (!list.length && !ovList.length) return;
   while (list.length) {
     const c = list.pop();
     if (c.revokeOnRemove && c.url?.startsWith("blob:")) URL.revokeObjectURL(c.url);
   }
+  while (ovList.length) {
+    const ov = ovList.pop();
+    if (ov.revokeUrl && ov.imageSrc?.startsWith("blob:")) URL.revokeObjectURL(ov.imageSrc);
+  }
   editingController.renderClips();
+  editingController.renderOverlays();
   const ctx = el.editCanvas.getContext("2d");
   ctx.fillStyle = "#050507";
   ctx.fillRect(0, 0, el.editCanvas.width, el.editCanvas.height);
-  showToast("Editing Room clips cleared");
+  showToast("Editing Room timeline & overlays cleared");
+});
+
+el.btnAddOvText?.addEventListener("click", async () => {
+  const text = (el.ovText.value || "").trim();
+  if (!text) {
+    showToast("Enter kinetic text first");
+    return;
+  }
+  await editingController.addOverlay({
+    kind: "text",
+    text,
+    anim: el.ovAnim.value,
+    position: el.ovPos.value,
+    color: el.ovColor.value,
+    startSec: el.ovStart.value,
+    durSec: el.ovDur.value
+  });
+  el.ovText.value = "";
+});
+
+el.inputOvObject?.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const objUrl = URL.createObjectURL(file);
+  try {
+    await editingController.addOverlay({
+      kind: "object",
+      label: file.name,
+      imageSrc: objUrl,
+      revokeUrl: true,
+      anim: el.ovAnim.value,
+      position: el.ovPos.value,
+      startSec: el.ovStart.value,
+      durSec: el.ovDur.value
+    });
+  } catch (err) {
+    URL.revokeObjectURL(objUrl);
+    showToast(err?.message || "Failed loading kinetic object");
+  } finally {
+    el.inputOvObject.value = "";
+  }
 });
 
 el.btnEditingRoom.addEventListener("click", openEditing);
@@ -2295,6 +2440,7 @@ chrome?.tabs?.onUpdated?.addListener((_, info) => {
 function syncDomFromState() {
   el.subjectInput.value = state.subject || "";
   el.characterLock.value = state.characterLock || "";
+  if (el.endObjectInput) el.endObjectInput.value = state.endObject || "";
   el.lipsyncDialogue.value = state.lipsyncDialogue || "";
   el.lipsyncAmbience.value = state.lipsyncAmbience || "";
   el.motionRefDesc.value = state.motionRefDescription || "";

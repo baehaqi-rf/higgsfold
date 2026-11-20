@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import {
   getExportDimensions,
   validateTrimBounds,
-  computeDrawRect
+  computeDrawRect,
+  evaluateEasing,
+  computeOverlayTransform
 } from "../sidepanel/editing-room.js";
 import { computeMotionSampleTimestamps } from "../sidepanel/motion-extractor.js";
 import { normalizeSoulEntry } from "../sidepanel/soul-vault.js";
@@ -72,4 +74,31 @@ test("normalizeSoulEntry formats @handles cleanly and caps refs to 4", () => {
   });
   assert.equal(soul.handle, "@kai_noir");
   assert.equal(soul.refs.length, 4);
+});
+
+test("evaluateEasing & computeOverlayTransform compute accurate 60fps kinetic text and object motion", () => {
+  assert.ok(evaluateEasing("easeOutBack", 0.5) > 1.0, "easeOutBack should overshoot past 1.0 mid-curve");
+  assert.equal(evaluateEasing("linear", 0.4), 0.4);
+
+  const hiddenBefore = computeOverlayTransform({ startSec: 1.0, durSec: 2.0 }, 0.5, 1280, 720);
+  assert.equal(hiddenBefore.visible, false);
+
+  const midType = computeOverlayTransform(
+    { anim: "typewriter", position: "bottom", startSec: 0, durSec: 2.0 },
+    0.65,
+    1280,
+    720
+  );
+  assert.equal(midType.visible, true);
+  assert.equal(Math.round(midType.y), Math.round(720 * 0.82));
+  assert.ok(midType.charRevealRatio > 0.4 && midType.charRevealRatio <= 1);
+
+  const spinObj = computeOverlayTransform(
+    { anim: "spin-fly", position: "center", startSec: 0, durSec: 3.0 },
+    0.24,
+    1080,
+    1080
+  );
+  assert.equal(spinObj.visible, true);
+  assert.ok(spinObj.scale > 0);
 });

@@ -17,9 +17,11 @@ import {
   formatStoryboardExport
 } from "../sidepanel/compiler.js";
 
-test("preset catalog includes 110+ Stage 1 looks, 35 directional Stage 2 moves, and zero brand leakage", () => {
+test("preset catalog includes 110+ Stage 1 looks, 47 Stage 2 camera+Kinetic VFX moves, and zero brand leakage", () => {
   assert.ok(STAGE1_PRESETS.length >= 110, `Expected >= 110 Stage 1 presets, got ${STAGE1_PRESETS.length}`);
-  assert.equal(STAGE2_PRESETS.length, 35, "Expected 35 Stage 2 camera presets");
+  assert.equal(STAGE2_PRESETS.length, 47, "Expected 35 camera + 12 Kinetic VFX presets");
+  assert.ok(STAGE2_CATEGORIES.includes("Kinetic VFX"));
+  assert.equal(STAGE2_PRESETS.filter((p) => p.category === "Kinetic VFX").length, 12);
   assert.equal(COLOR_PALETTES.length, 21, "Expected Match Reference + 20 Cinema Studio palettes");
   assert.equal(DRAMA_STORY_ARCS.length, 4, "Expected 4 Short Drama Story Arcs");
 
@@ -223,4 +225,26 @@ test("buildCustomPreset generates 10 unique IDs in synchronous batch loop & form
     { stage: "STAGE1", preset: "Editorial 35mm", prompt: "LINE1" }
   ]);
   assert.match(out, /=== SHOT 1: Editorial 35mm \(STAGE1\) ===\nLINE1/);
+});
+
+test("Kinetic VFX preset compiles Start->End object morph beats without anti-morph contradiction", () => {
+  const morphPrompt = compilePrompt(
+    {
+      stage: "stage2",
+      selectedStage2Id: "liquid-metal-morph",
+      stage2Queue: ["liquid-metal-morph"],
+      subject: "matte black running sneaker on studio pedestal",
+      endObject: "chrome sculptural sports coupe",
+      duration: "5s",
+      aspect: "16:9",
+      guardrails: true
+    },
+    STAGE1_PRESETS,
+    STAGE2_PRESETS
+  );
+
+  assert.match(morphPrompt, /From matte black running sneaker on studio pedestal into chrome sculptural sports coupe/);
+  assert.match(morphPrompt, /Morph directly into chrome sculptural sports coupe/);
+  assert.match(morphPrompt, /kinetic transformation/);
+  assert.equal(/zero ghosting or limb morphing/.test(morphPrompt), false);
 });

@@ -4,9 +4,10 @@
 
 ## Complete Studio Capabilities (v4.0)
 
-1. **Temporal Beat Prose Compiler & Physics Guardrails (Stage 1 & Stage 2):**
-   - **Prose Cinema Mode (Default):** Compiles natural-language temporal beats (`0.0s–1.3s`, `1.3s–4.0s`, `4.0s–5.0s`, or proportional split across up to 3 sequential camera moves) with toggleable anti-morphing physics guardrails (`Guardrails`) and legacy `Structured` breakdown mode.
-   - **Stage 2 — 35 Camera Movements:** All Cinema Studio 4.0 camera trajectories with distinct directional hover preview animations (`Pan Left/Right`, `Tilt Up/Down`, `Arc Left/Right`, `Truck Left/Right`, `Slider Left/Right`, `Crane Up/Down`, `Dolly In/Out`).
+1. **Temporal Beat Prose Compiler, Physics Guardrails & Kinetic VFX (Stage 1 & Stage 2):**
+   - **Prose Cinema Mode (Default):** Compiles natural-language temporal beats (`0.0s–1.3s`, `1.3s–4.0s`, `4.0s–5.0s`, or proportional split across up to 3 sequential moves) with toggleable `Guardrails` and legacy `Structured` breakdown mode.
+   - **Stage 2 — 47 Camera & Kinetic VFX Presets:** 35 Cinema Studio 4.0 camera trajectories with directional hover preview animations plus **12 Kinetic Object & Typography VFX Presets** (*Liquid Metal Morph, Shatter Reassemble, Match-Cut Swap, Elastic Pop Transform, Magnetic Assembly, Particle Vortex Morph, Origami Fold Unwrap, Chromatic Glitch Swap, Gravity Slam Morph, Molten Glass Morph, Vortex Portal Shift, 3D Kinetic Typo Punch*) using morph-aware guardrails and optional **Morph Target B**.
+   - **Dual-Keyframe Pipeline (`0/2` References):** Upload Start Frame (A) + End Morph Target (B) and attach sequentially (`Send A→B to Flow`) for Google Flow `Frames` Start→End transitions.
    - **Stage 1 — 113 Keyframe & Soul Studio Looks:** Across 10 categories with search, category filter pills, and deduplicated optical/lighting specs.
 
 2. **Closed-Loop Grab Output (`Grab Output`):**
@@ -28,8 +29,9 @@
 6. **Short Drama 2.0 & Storyboard Runner:**
    - 4 narrative **Story Arcs** (*Cinematic Drama, Luxury Commercial, Suspense Thriller, Fashion Lookbook*) generating a Master Keyframe + 3–8 linked shots with `↑/↓` reorder, per-shot direct **Inject**, and JSON/Markdown script export.
 
-7. **Client-Side NLE Editing Room (`Edit`):**
-   - Aspect-aware HD canvas & WebM export (`16:9 1280×720`, `9:16 720×1280`, `1:1 1080×1080`, `2.39:1 1280×536`), `cover`/`contain` framing without aspect distortion, per-clip **Trim In/Out**, `0.35s` crossfade transitions, and WebAudio `AudioContext` stream multiplexing (`6 Mbps` video + `128 kbps` audio).
+7. **Client-Side NLE Editing Room (`Edit`) & 60fps Kinetic Overlay Engine:**
+   - Aspect-aware HD canvas & WebM export (`16:9 1280×720`, `9:16 720×1280`, `1:1 1080×1080`, `2.39:1 1280×536`), `cover`/`contain` framing, per-clip **Trim In/Out**, `0.35s` crossfade transitions, and WebAudio `AudioContext` stream multiplexing (`6 Mbps` video + `128 kbps` audio).
+   - **Kinetic Text & PNG Object Overlays:** Exact-spelling typography (`Pop Scale`, `Slide Up Reveal`, `Kinetic Slam`, `Typewriter`) and animated PNG/WebP objects (`Spin Fly-In`, `Orbit Float`, `easeOutBack`/`easeOutExpo`/`springElastic` curves) rendered cleanly over Flow clips or standalone studio canvas and baked into exported `.webm`.
 
 ## Project Structure
 
