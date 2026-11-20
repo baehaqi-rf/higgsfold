@@ -1045,7 +1045,8 @@ select option {
   transition: opacity 0.15s ease;
 }
 
-.preset-card:hover .preset-media-video {
+.preset-card:hover .preset-media-video,
+.preset-media-video.is-playing {
   opacity: 1;
 }
 

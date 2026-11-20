@@ -81,6 +81,7 @@ const WORKSPACE_PERSIST_FIELDS = [
   "motionControlMode",
   "dramaArcId",
   "includeAudio",
+  "autoPlayMotion",
   "autoSubmit",
   "autoSyncFlow"
 ];
@@ -129,6 +130,7 @@ const state = {
   motionControlMode: "video-bg",
   dramaArcId: DRAMA_STORY_ARCS[0].id,
   includeAudio: true,
+  autoPlayMotion: true,
   autoSubmit: false,
   autoSyncFlow: false,
   manualOverride: false,
@@ -166,6 +168,7 @@ const el = {
   presetCount: document.getElementById("preset-count"),
   presetSearch: document.getElementById("preset-search"),
   categoryPills: document.getElementById("category-pills"),
+  btnToggleAutoplay: document.getElementById("btn-toggle-autoplay"),
   btnToggleSequence: document.getElementById("btn-toggle-sequence"),
   sequenceBar: document.getElementById("sequence-bar"),
   sequenceChips: document.getElementById("sequence-chips"),
@@ -345,6 +348,7 @@ const el = {
 
 let isInjecting = false;
 let isMaximizing = false;
+let videoObserver = null;
 let motionVideoObjectUrl = "";
 let motionVideoFile = null;
 let motionSheetDataUrl = "";
@@ -739,10 +743,23 @@ function startEditingCustomPreset(stage, preset) {
 }
 
 function renderPresets() {
-  if (state.stage !== "stage1" && state.stage !== "stage2") return;
+  if (videoObserver) {
+    videoObserver.disconnect();
+    videoObserver = null;
+  }
+  if (state.stage !== "stage1" && state.stage !== "stage2") {
+    if (el.btnToggleAutoplay) el.btnToggleAutoplay.classList.add("hidden");
+    return;
+  }
   const isVideo = state.stage === "stage2";
   const fullList = isVideo ? getStage2All() : getStage1All();
   const query = state.searchQuery.trim().toLowerCase();
+
+  if (el.btnToggleAutoplay) {
+    el.btnToggleAutoplay.classList.toggle("hidden", !isVideo);
+    el.btnToggleAutoplay.classList.toggle("active", Boolean(state.autoPlayMotion));
+    el.btnToggleAutoplay.textContent = state.autoPlayMotion ? "Auto-Play: ON" : "Auto-Play: OFF";
+  }
 
   const filtered = fullList.filter((p) => {
     const matchesCat = state.selectedCategory === "All" || p.category === state.selectedCategory;
@@ -768,6 +785,28 @@ function renderPresets() {
     return;
   }
 
+  if (isVideo && state.autoPlayMotion && typeof IntersectionObserver !== "undefined") {
+    videoObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const cardEl = entry.target;
+          const vid = cardEl.querySelector(".preset-media-video");
+          const src = cardEl.dataset.videoSrc;
+          if (!vid || !src) return;
+          if (entry.isIntersecting) {
+            if (!vid.src) vid.src = src;
+            vid.autoplay = true;
+            vid.play().catch(() => {});
+          } else if (vid.src) {
+            vid.pause();
+            vid.classList.remove("is-playing");
+          }
+        });
+      },
+      { root: el.presetGrid, threshold: 0.25 }
+    );
+  }
+
   filtered.forEach((preset) => {
     const isSelected = isVideo
       ? state.stage2Queue.includes(preset.id)
@@ -777,6 +816,7 @@ function renderPresets() {
     card.className = `preset-card ${isSelected ? "selected" : ""}`;
     card.setAttribute("role", "button");
     card.tabIndex = 0;
+    if (preset.videoSrc) card.dataset.videoSrc = preset.videoSrc;
 
     const stageDiv = document.createElement("div");
     stageDiv.className = "preset-stage";
@@ -806,15 +846,24 @@ function renderPresets() {
       vid.loop = true;
       vid.playsInline = true;
       vid.preload = "none";
-      vid.onerror = () => vid.remove();
+      vid.addEventListener("playing", () => vid.classList.add("is-playing"));
+      vid.addEventListener("pause", () => vid.classList.remove("is-playing"));
+      vid.onerror = () => {
+        if (videoObserver) videoObserver.unobserve(card);
+        vid.remove();
+      };
       card.addEventListener("mouseenter", () => {
         if (!vid.src) vid.src = preset.videoSrc;
         vid.play().catch(() => {});
       });
       card.addEventListener("mouseleave", () => {
-        if (vid.src) vid.pause();
+        if (vid.src && !state.autoPlayMotion) {
+          vid.pause();
+          vid.classList.remove("is-playing");
+        }
       });
       stageDiv.appendChild(vid);
+      if (videoObserver) videoObserver.observe(card);
     }
 
     const badge = document.createElement("span");
@@ -1675,6 +1724,14 @@ el.btnToggleSequence.addEventListener("click", () => {
   }
   renderPresets();
 });
+
+if (el.btnToggleAutoplay) {
+  el.btnToggleAutoplay.addEventListener("click", () => {
+    state.autoPlayMotion = !state.autoPlayMotion;
+    schedulePersistWorkspace();
+    renderPresets();
+  });
+}
 
 el.btnClearSequence.addEventListener("click", () => {
   state.stage2Queue = [state.selectedStage2Id];

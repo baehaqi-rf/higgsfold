@@ -271,11 +271,12 @@ test("buildGeminiDirectorMetaPrompt & cleanGeminiEnhancedOutput preserve locks a
   assert.equal(cleanGeminiEnhancedOutput('"Quoted cinema prompt."'), "Quoted cinema prompt.");
 });
 
-test("Every Stage 1 (113) and Stage 2 (47) preset has a real HTTPS Higgsfield CDN poster", () => {
+test("Every Stage 1 (113) has real poster and Stage 2 (47) has BOTH real poster & video preview", () => {
   for (const p of STAGE1_PRESETS) {
     assert.ok(p.poster && p.poster.startsWith("https://"), `Missing real poster for S1 ${p.id}`);
   }
   for (const p of STAGE2_PRESETS) {
     assert.ok(p.poster && p.poster.startsWith("https://"), `Missing real poster for S2 ${p.id}`);
+    assert.ok(p.videoSrc && p.videoSrc.startsWith("https://") && p.videoSrc.includes(".mp4"), `Missing real videoSrc for S2 ${p.id}`);
   }
 });
