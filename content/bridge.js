@@ -220,15 +220,29 @@
   function normalizePickedTarget(target, step) {
     if (!target || target.nodeType !== Node.ELEMENT_NODE) return target;
     if (step === 1) {
-      return (
-        target.closest(
-          'textarea, input, div.ProseMirror, div.ql-editor, [contenteditable="true"], [role="textbox"]'
-        ) || target
+      const direct = target.closest(
+        'textarea, input, div.ProseMirror, div.ql-editor, [contenteditable="true"], [role="textbox"]'
       );
+      if (direct) return direct;
+      // If user clicks a compact prompt card wrapper (e.g. flow-rich-text-editor or div.base-prompt-box),
+      // resolve the inner editable element inside it instead of binding the wrapper.
+      const rect = target.getBoundingClientRect();
+      if (rect.height > 0 && rect.height < window.innerHeight * 0.55) {
+        const inner = target.querySelector(
+          'div.ProseMirror, div.ql-editor, [contenteditable="true"], [role="textbox"], textarea'
+        );
+        if (inner && isVisible(inner)) return inner;
+      }
+      return null;
     }
-    return (
-      target.closest('button, [role="button"], [type="submit"], a') || target
-    );
+    const btn = target.closest('button, [role="button"], [type="submit"], a');
+    if (btn) return btn;
+    const rect = target.getBoundingClientRect();
+    if (rect.height > 0 && rect.height < 140) {
+      const innerBtn = target.querySelector('button, [role="button"], [type="submit"]');
+      if (innerBtn && isVisible(innerBtn)) return innerBtn;
+    }
+    return null;
   }
 
   function buildUniqueSelector(el) {
@@ -274,6 +288,16 @@
     return parts.join(" > ");
   }
 
+  function getCleanToggleText(el) {
+    const toggleSpan = el.querySelector?.(".toggle-text");
+    if (toggleSpan) {
+      return (toggleSpan.textContent || "").replace(/\s+/g, " ").trim();
+    }
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll?.("mat-icon, svg").forEach((n) => n.remove());
+    return (clone.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
   // Google Flow Settings Auto-Sync (Mode, Aspect Ratio, Batch, Model)
   async function syncGoogleFlowSettings(settings) {
     const host = window.location.hostname;
@@ -285,26 +309,34 @@
       return { ok: false, error: "Flow Settings sync is available on flow.google.com / labs.google." };
     }
 
-    const wasAlreadyOpen = Boolean(document.querySelector(".cdk-overlay-pane:not(.hidden) [role='radio']"));
+    const findSettingsOverlay = () =>
+      Array.from(document.querySelectorAll(".cdk-overlay-pane:not(.hidden)")).find((p) =>
+        p.querySelector('[role="radio"], .mat-button-toggle-button')
+      );
+
+    const wasAlreadyOpen = Boolean(findSettingsOverlay());
     if (!wasAlreadyOpen && trigger) {
       trigger.click();
-      await new Promise((r) => setTimeout(r, 180));
+      await new Promise((r) => setTimeout(r, 200));
     }
 
-    const overlay = document.querySelector(".cdk-overlay-pane:not(.hidden)");
+    const overlay = findSettingsOverlay();
     if (!overlay) {
-      return { ok: false, error: "Could not open Flow Settings popover." };
+      return { ok: false, error: "Open a Google Flow project first so Settings popover can open." };
     }
 
     const synced = [];
     const clickMatchingRadio = (targetText) => {
+      const targetLower = targetText.toLowerCase();
       const radios = Array.from(overlay.querySelectorAll('[role="radio"], .mat-button-toggle-button'));
-      const match = radios.find((el) => {
-        const txt = (el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
-        return txt === targetText.toLowerCase() || txt.includes(targetText.toLowerCase());
-      });
+      const exact = radios.find((el) => getCleanToggleText(el).toLowerCase() === targetLower);
+      const match =
+        exact ||
+        radios.find((el) => getCleanToggleText(el).toLowerCase().includes(targetLower));
       if (match) {
-        match.click();
+        if (match.getAttribute("aria-checked") !== "true") {
+          match.click();
+        }
         return true;
       }
       return false;
@@ -312,7 +344,7 @@
 
     if (settings.mode && clickMatchingRadio(settings.mode)) {
       synced.push(`Mode:${settings.mode}`);
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 150));
     }
 
     if (settings.aspectRatio && settings.aspectRatio !== "2.39:1") {
@@ -331,9 +363,10 @@
     // Optional Model selection inside popover menu
     if (settings.modelHint) {
       const modelBtn = overlay.querySelector('button[aria-label="Select model family"]');
-      if (modelBtn && !(modelBtn.textContent || "").toLowerCase().includes(settings.modelHint.toLowerCase())) {
+      const currentModelText = modelBtn ? getCleanToggleText(modelBtn).toLowerCase() : "";
+      if (modelBtn && !currentModelText.includes(settings.modelHint.toLowerCase())) {
         modelBtn.click();
-        await new Promise((r) => setTimeout(r, 160));
+        await new Promise((r) => setTimeout(r, 180));
         const menuItems = Array.from(
           document.querySelectorAll('.cdk-overlay-pane [role="menuitem"], .cdk-overlay-pane button.mat-mdc-menu-item')
         );
@@ -343,15 +376,20 @@
         if (targetItem) {
           targetItem.click();
           synced.push(`Model:${settings.modelHint}`);
-          await new Promise((r) => setTimeout(r, 100));
+          await new Promise((r) => setTimeout(r, 120));
         }
       }
     }
 
-    if (!wasAlreadyOpen && trigger) {
-      await new Promise((r) => setTimeout(r, 80));
-      if (document.querySelector(".cdk-overlay-pane:not(.hidden) [role='radio']")) {
-        trigger.click();
+    if (!wasAlreadyOpen) {
+      await new Promise((r) => setTimeout(r, 90));
+      if (findSettingsOverlay()) {
+        const backdrop = document.querySelector(".cdk-overlay-backdrop-showing");
+        if (backdrop) {
+          backdrop.click();
+        } else if (trigger) {
+          trigger.click();
+        }
       }
     }
 
@@ -413,8 +451,12 @@
     const rawTarget = e.target;
     if (!rawTarget || rawTarget === highlightBox || rawTarget === pickerHud) return;
     const target = normalizePickedTarget(rawTarget, pickerState.step);
-    const rect = target.getBoundingClientRect();
     ensurePickerUI();
+    if (!target) {
+      highlightBox.style.display = "none";
+      return;
+    }
+    const rect = target.getBoundingClientRect();
     highlightBox.style.display = "block";
     highlightBox.style.top = `${rect.top}px`;
     highlightBox.style.left = `${rect.left}px`;
@@ -428,6 +470,14 @@
     e.stopPropagation();
 
     const normalized = normalizePickedTarget(e.target, pickerState.step);
+    if (!normalized) {
+      showPickerHud(
+        pickerState.step === 1
+          ? "Click directly inside the text prompt box"
+          : "Click directly on the Generate / Send button"
+      );
+      return;
+    }
     const selector = buildUniqueSelector(normalized);
 
     if (pickerState.step === 1) {

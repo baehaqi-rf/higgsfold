@@ -38,7 +38,14 @@ function createMockDom({ hostname, site }) {
       getAttribute(k) { return attrMap.has(k) ? String(attrMap.get(k)) : null; },
       setAttribute(k, v) { attrMap.set(k, String(v)); },
       hasAttribute(k) { return attrMap.has(k); },
-      getBoundingClientRect() { return { top: 10, left: 10, width: 200, height: 40 }; },
+      getBoundingClientRect() {
+        return attrs._rect || { top: 10, left: 10, width: 200, height: 40 };
+      },
+      cloneNode() {
+        const cloned = makeEl(tag, attrs);
+        cloned.textContent = this.textContent;
+        return cloned;
+      },
       focus() { this.focused = true; },
       click() {
         this.clicked += 1;
@@ -129,7 +136,14 @@ function createMockDom({ hostname, site }) {
   popover.appendChild(radioVideo);
   popover.appendChild(radio916);
   popover.appendChild(radioX2);
-  popover.querySelectorAll = () => [radioImage, radioVideo, radio916, radioX2];
+  popover.querySelectorAll = (sel) => {
+    if (sel && sel.includes("Select model family")) return [];
+    return [radioImage, radioVideo, radio916, radioX2];
+  };
+  popover.querySelector = (sel) => {
+    if (sel && sel.includes("role=\"radio\"")) return radioImage;
+    return null;
+  };
   settingsBtn.addEventListener("click", () => {
     if (popover.classList.contains("hidden")) popover.classList.remove("hidden");
     else popover.classList.add("hidden");
@@ -161,6 +175,9 @@ function createMockDom({ hostname, site }) {
       return null;
     },
     querySelectorAll(sel) {
+      if (sel.includes(".cdk-overlay-pane:not(.hidden)")) {
+        return popover.classList.contains("hidden") ? [] : [popover];
+      }
       if (site === "flow") {
         if (sel.includes("ProseMirror") || sel.includes("What do you want to create")) return [flowEditor];
         if (sel.includes("Start generation")) return [flowBtn];
@@ -174,8 +191,14 @@ function createMockDom({ hostname, site }) {
     }
   };
 
+  const workspaceBackdrop = makeEl("div", {
+    class: "cdk-virtual-scrollable page-container",
+    _rect: { top: 0, left: 0, width: 1200, height: 900 }
+  });
+
   const sandbox = {
     window: null,
+    innerHeight: 900,
     document,
     Node: { ELEMENT_NODE: 1 },
     CSS: { escape: (s) => s },
@@ -227,7 +250,8 @@ function createMockDom({ hostname, site }) {
     radio916,
     radioX2,
     storage,
-    document
+    document,
+    workspaceBackdrop
   };
 }
 
@@ -273,12 +297,18 @@ test("bridge.js syncs Google Flow Settings popover (Mode, AR, Batch)", async () 
   assert.equal(ctx.radioX2.clicked, 1);
 });
 
-test("bridge.js Bind UI picker normalizes inner <span.mat-icon> click to enclosing <button>", async () => {
+test("bridge.js Bind UI picker ignores 1200x900 workspace container and normalizes <span.mat-icon> to <button>", async () => {
   const ctx = createMockDom({ hostname: "flow.google.com", site: "flow" });
   await ctx.dispatchMsg({ type: "HIGGSFOLD_START_PICKER" });
+  // Clicking the 1200x900 workspace backdrop must NOT advance to step 2
+  ctx.document.dispatchDocClick(ctx.workspaceBackdrop);
   ctx.document.dispatchDocClick(ctx.flowEditor);
   ctx.document.dispatchDocClick(ctx.flowIcon);
   await new Promise((r) => setTimeout(r, 20));
+  assert.equal(
+    ctx.storage.customSelectors["flow.google.com"].input,
+    'div[aria-label="What do you want to create?"]'
+  );
   assert.equal(
     ctx.storage.customSelectors["flow.google.com"].submit,
     'button[aria-label="Start generation"]'
