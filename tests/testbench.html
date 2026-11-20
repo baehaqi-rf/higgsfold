@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HiggsFold v2.0 — REA Ground-Truth Playtest Bench</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #050507;
+      color: #f4f4f6;
+      font-family: system-ui, -apple-system, sans-serif;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
+      overflow: hidden;
+    }
+    .target-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #27272c;
+      height: 100vh;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .target-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #121216;
+      border-bottom: 1px solid #27272c;
+      gap: 10px;
+    }
+    .target-toolbar strong { color: #d4ff00; font-size: 13px; }
+    .mode-btns { display: flex; gap: 6px; }
+    .mode-btn {
+      background: #1c1c1e;
+      color: #e4e4e7;
+      border: 1px solid #2e2e36;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .mode-btn.active {
+      background: #d4ff00;
+      color: #0a0a0a;
+      border-color: #d4ff00;
+    }
+    .mock-canvas {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      background: radial-gradient(circle at top left, #181822 0%, #09090b 65%);
+    }
+    .mock-card {
+      background: #141418;
+      border: 1px solid #27272c;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .mock-card h2 { font-size: 14px; margin-bottom: 10px; color: #e4e4e7; }
+    .prosemirror-editor, .gemini-editor-wrap {
+      background: #0d0d10;
+      border: 1px solid #2e2e38;
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 110px;
+      position: relative;
+    }
+    .ProseMirror, .ql-editor {
+      min-height: 76px;
+      max-height: 190px;
+      overflow-y: auto;
+      outline: none;
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .mock-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      gap: 10px;
+    }
+    .settings-trigger-button {
+      background: #23232a;
+      color: #e4e4e7;
+      border: 1px solid #353540;
+      border-radius: 99px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .generate-icon-button, .gemini-send-btn {
+      background: #d4ff00;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 99px;
+      padding: 8px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .generate-icon-button[disabled] {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .cdk-overlay-pane {
+      margin-top: 10px;
+      background: #19191f;
+      border: 1px solid #3f3f4a;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .cdk-overlay-pane.hidden { display: none; }
+    .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .mat-button-toggle-button {
+      background: #101014;
+      color: #a1a1aa;
+      border: 1px solid #2e2e36;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+    .mat-button-toggle-button[aria-checked="true"] {
+      background: rgba(212, 255, 0, 0.16);
+      border-color: #d4ff00;
+      color: #d4ff00;
+    }
+    .event-log {
+      font-family: ui-monospace, monospace;
+      font-size: 11.5px;
+      color: #a1a1aa;
+      background: #0c0c0f;
+      border: 1px solid #27272c;
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .sidepanel-pane {
+      height: 100vh;
+      background: #0a0a0a;
+    }
+    iframe#sidepanel-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <section class="target-pane">
+    <div class="target-toolbar">
+      <strong>REA Target Simulator (<span id="active-origin">flow.google.com</span>)</strong>
+      <div class="mode-btns">
+        <button id="switch-flow" class="mode-btn active" type="button">Google Flow DOM</button>
+        <button id="switch-gemini" class="mode-btn" type="button">Gemini DOM</button>
+      </div>
+    </div>
+
+    <div class="mock-canvas">
+      <!-- Simulated Google Flow Workspace -->
+      <div id="flow-workspace" class="mock-card">
+        <h2>Simulated Google Flow Workspace (ProseMirror + Angular Material)</h2>
+        <div class="prosemirror-editor">
+          <div
+            id="flow-prosemirror"
+            role="textbox"
+            aria-multiline="true"
+            aria-label="What do you want to create?"
+            contenteditable="true"
+            class="ProseMirror"
+          ><p></p></div>
+        </div>
+        <div class="mock-actions">
+          <button
+            id="flow-settings-btn"
+            type="button"
+            aria-label="Settings trigger"
+            class="settings-trigger-button"
+          >Video · 720p · 8s x1</button>
+          <button
+            id="flow-generate-btn"
+            type="submit"
+            aria-label="Start generation"
+            class="generate-icon-button mat-mdc-button-disabled"
+            disabled
+          ><span class="mat-icon">arrow_forward</span> Start generation</button>
+        </div>
+
+        <div id="flow-popover" class="cdk-overlay-pane hidden">
+          <div class="radio-group" data-group="mode">
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">Image</button>
+            <button type="button" role="radio" aria-checked="true" class="mat-button-toggle-button">Video</button>
+          </div>
+          <div class="radio-group" data-group="aspect">
+            <button type="button" role="radio" aria-checked="true" class="mat-button-toggle-button">16:9</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">9:16</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">1:1</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">4:3</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">3:4</button>
+          </div>
+          <div class="radio-group" data-group="batch">
+            <button type="button" role="radio" aria-checked="true" class="mat-button-toggle-button">x1</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">x2</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">x3</button>
+            <button type="button" role="radio" aria-checked="false" class="mat-button-toggle-button">x4</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulated Google Gemini Workspace -->
+      <div id="gemini-workspace" class="mock-card hidden">
+        <h2>Simulated Google Gemini Workspace (Quill rich-textarea)</h2>
+        <div class="gemini-editor-wrap">
+          <rich-textarea class="text-input-field_textarea ql-container">
+            <div
+              id="gemini-quill"
+              class="ql-editor textarea"
+              contenteditable="true"
+              role="textbox"
+              aria-multiline="true"
+              aria-label="Enter a prompt for Gemini"
+            ><p></p></div>
+          </rich-textarea>
+        </div>
+        <div class="mock-actions">
+          <span style="font-size:12px;color:#a1a1aa;">Mode: 4 Hydrogen</span>
+          <button
+            id="gemini-mic-btn"
+            type="button"
+            aria-label="Dictate"
+            class="settings-trigger-button"
+          >Dictate</button>
+          <button
+            id="gemini-send-btn"
+            type="button"
+            aria-label="Send message"
+            class="gemini-send-btn hidden"
+          >Send message</button>
+        </div>
+      </div>
+
+      <div class="mock-card">
+        <h2>Bridge Telemetry &amp; Verification Log</h2>
+        <div id="telemetry-log" class="event-log">Ready. Waiting for HiggsFold injection or sync...</div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="sidepanel-pane">
+    <iframe id="sidepanel-frame" title="HiggsFold Side Panel"></iframe>
+  </aside>
+
+  <script>
+    const logEl = document.getElementById("telemetry-log");
+    const log = (msg) => {
+      logEl.textContent += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    let simulatedUrl = "https://flow.google.com/project/demo-test";
+    const flowEditor = document.getElementById("flow-prosemirror");
+    const flowGenerateBtn = document.getElementById("flow-generate-btn");
+    const flowSettingsBtn = document.getElementById("flow-settings-btn");
+    const flowPopover = document.getElementById("flow-popover");
+    const geminiEditor = document.getElementById("gemini-quill");
+    const geminiMicBtn = document.getElementById("gemini-mic-btn");
+    const geminiSendBtn = document.getElementById("gemini-send-btn");
+
+    const flowState = { mode: "Video", aspect: "16:9", batch: "x1" };
+    function refreshFlowSummary() {
+      flowSettingsBtn.textContent = `${flowState.mode} · 720p · 8s ${flowState.batch}`;
+    }
+
+    flowSettingsBtn.addEventListener("click", () => {
+      flowPopover.classList.toggle("hidden");
+    });
+
+    flowPopover.querySelectorAll('[role="radio"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const group = btn.closest(".radio-group");
+        group.querySelectorAll('[role="radio"]').forEach((b) => b.setAttribute("aria-checked", "false"));
+        btn.setAttribute("aria-checked", "true");
+        const grp = group.dataset.group;
+        flowState[grp] = btn.textContent.trim();
+        refreshFlowSummary();
+        log(`Flow Setting changed -> ${grp}: ${flowState[grp]}`);
+      });
+    });
+
+    flowEditor.addEventListener("input", () => {
+      const hasText = flowEditor.textContent.trim().length > 0;
+      flowGenerateBtn.disabled = !hasText;
+      flowGenerateBtn.classList.toggle("mat-mdc-button-disabled", !hasText);
+      log(`Flow ProseMirror input (${flowEditor.textContent.trim().length} chars)`);
+    });
+
+    flowGenerateBtn.addEventListener("click", () => {
+      log(`Flow Start generation clicked! Mode=${flowState.mode}, AR=${flowState.aspect}, Batch=${flowState.batch}`);
+    });
+
+    geminiEditor.addEventListener("input", () => {
+      const hasText = geminiEditor.textContent.trim().length > 0;
+      setTimeout(() => {
+        geminiMicBtn.classList.toggle("hidden", hasText);
+        geminiSendBtn.classList.toggle("hidden", !hasText);
+      }, 150);
+      log(`Gemini Quill input (${geminiEditor.textContent.trim().length} chars)`);
+    });
+
+    geminiSendBtn.addEventListener("click", () => {
+      log("Gemini Send message clicked!");
+    });
+
+    // Chrome Extension API Shim for Playtesting
+    const memoryStorage = {};
+    const runtimeListeners = [];
+    const tabActivatedListeners = [];
+
+    window.chrome = {
+      storage: {
+        local: {
+          async get(keys) {
+            if (Array.isArray(keys)) {
+              const out = {};
+              keys.forEach((k) => { if (k in memoryStorage) out[k] = memoryStorage[k]; });
+              return out;
+            }
+            if (typeof keys === "string") {
+              return keys in memoryStorage ? { [keys]: memoryStorage[keys] } : {};
+            }
+            return { ...memoryStorage };
+          },
+          async set(obj) {
+            Object.assign(memoryStorage, obj);
+          }
+        }
+      },
+      runtime: {
+        onMessage: {
+          addListener(fn) { runtimeListeners.push(fn); }
+        },
+        sendMessage(msg) {
+          runtimeListeners.forEach((fn) => {
+            try { fn(msg, {}, () => {}); } catch (_) {}
+          });
+        }
+      },
+      tabs: {
+        async query() {
+          return [{ id: 1, url: simulatedUrl }];
+        },
+        async sendMessage(_tabId, msg) {
+          return new Promise((resolve) => {
+            let responded = false;
+            const sendResponse = (res) => {
+              if (!responded) {
+                responded = true;
+                resolve(res);
+              }
+            };
+            for (const fn of runtimeListeners) {
+              fn(msg, {}, sendResponse);
+            }
+          });
+        },
+        create({ url }) {
+          log(`chrome.tabs.create -> ${url}`);
+        },
+        onActivated: { addListener(fn) { tabActivatedListeners.push(fn); } },
+        onUpdated: { addListener() {} }
+      },
+      scripting: {
+        async executeScript() {
+          log("chrome.scripting.executeScript fallback invoked");
+        }
+      }
+    };
+
+    // Load content/bridge.js onto this host testbench DOM
+    const bridgeScript = document.createElement("script");
+    bridgeScript.src = "../content/bridge.js";
+    document.body.appendChild(bridgeScript);
+
+    // Mount Side Panel inside iframe sharing the chrome shim
+    const frame = document.getElementById("sidepanel-frame");
+    frame.addEventListener("load", () => {
+      frame.contentWindow.chrome = window.chrome;
+      const s = frame.contentDocument.createElement("script");
+      s.type = "module";
+      s.src = "../sidepanel/app.js";
+      frame.contentDocument.body.appendChild(s);
+    });
+
+    // Fetch sidepanel/index.html, add <base> for /sidepanel/, strip auto app.js so chrome shim attaches first
+    const sidepanelBase = new URL("../sidepanel/", window.location.href).href;
+    fetch("../sidepanel/index.html")
+      .then((r) => r.text())
+      .then((html) => {
+        const patched = html
+          .replace("<head>", `<head><base href="${sidepanelBase}" />`)
+          .replace('<script type="module" src="app.js"><\/script>', "");
+        frame.srcdoc = patched;
+      });
+
+    document.getElementById("switch-flow").addEventListener("click", (e) => {
+      simulatedUrl = "https://flow.google.com/project/demo-test";
+      document.getElementById("active-origin").textContent = "flow.google.com";
+      document.getElementById("flow-workspace").classList.remove("hidden");
+      document.getElementById("gemini-workspace").classList.add("hidden");
+      e.target.classList.add("active");
+      document.getElementById("switch-gemini").classList.remove("active");
+      tabActivatedListeners.forEach((fn) => fn());
+      log("Switched simulated target to flow.google.com");
+    });
+
+    document.getElementById("switch-gemini").addEventListener("click", (e) => {
+      simulatedUrl = "https://gemini.google.com/app";
+      document.getElementById("active-origin").textContent = "gemini.google.com";
+      document.getElementById("flow-workspace").classList.add("hidden");
+      document.getElementById("gemini-workspace").classList.remove("hidden");
+      e.target.classList.add("active");
+      document.getElementById("switch-flow").classList.remove("active");
+      tabActivatedListeners.forEach((fn) => fn());
+      log("Switched simulated target to gemini.google.com");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HiggsFold Studio v2.0</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="studio-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">H</div>
+        <div class="brand-text">
+          <h1>HiggsFold <span class="version-pill">v2.0</span></h1>
+          <p class="subtitle">Flow &amp; Gemini Director</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-picker" class="icon-btn" type="button" title="Bind DOM Target (Click input &amp; button on active page)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"></circle>
+            <line x1="12" y1="2" x2="12" y2="6"></line>
+            <line x1="12" y1="18" x2="12" y2="22"></line>
+            <line x1="2" y1="12" x2="6" y2="12"></line>
+            <line x1="18" y1="12" x2="22" y2="12"></line>
+          </svg>
+          <span>Bind</span>
+        </button>
+        <button id="btn-custom-preset" class="icon-btn" type="button" title="Custom Preset Builder &amp; JSON Import/Export">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Preset</span>
+        </button>
+        <button id="btn-storyboard" class="icon-btn" type="button" title="Storyboard Shot List">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <line x1="9" y1="4" x2="9" y2="20"></line>
+          </svg>
+          <span id="shot-count" class="count-pill">0</span>
+        </button>
+        <button id="btn-history" class="icon-btn" type="button" title="Prompt History">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Connection Status Bar -->
+    <div id="tab-status" class="status-bar status-idle">
+      <span class="status-dot"></span>
+      <span id="status-text">Checking active tab...</span>
+      <div class="status-actions">
+        <button id="btn-sync-flow" class="pill-btn hidden" type="button" title="Sync Mode, Aspect Ratio &amp; Batch to Google Flow Settings">Sync Flow</button>
+        <button id="btn-open-flow" class="link-btn" type="button">Open Flow</button>
+      </div>
+    </div>
+
+    <!-- 2-Stage Pipeline Switcher -->
+    <nav class="stage-tabs" role="tablist">
+      <button class="stage-tab active" data-stage="stage2" role="tab" aria-selected="true" type="button">
+        <span class="stage-kicker">STAGE 2 • VIDEO</span>
+        <span class="stage-name">Omni 1.2 Flash</span>
+      </button>
+      <button class="stage-tab" data-stage="stage1" role="tab" aria-selected="false" type="button">
+        <span class="stage-kicker">STAGE 1 • IMAGE</span>
+        <span class="stage-name">Nano Banana 2.1</span>
+      </button>
+    </nav>
+
+    <!-- Main Scrollable Studio Workspace -->
+    <main class="workspace">
+      <!-- Preset Grid Section -->
+      <section class="panel-section">
+        <div class="section-header">
+          <h2 id="preset-heading">Camera Motion Presets</h2>
+          <div class="section-tools">
+            <button id="btn-toggle-sequence" class="mini-toggle hidden" type="button" title="Chain up to 3 camera moves in order">
+              Multi-Move: OFF
+            </button>
+            <span id="preset-count" class="meta-badge">20 presets</span>
+          </div>
+        </div>
+
+        <!-- Search & Category Filters -->
+        <div class="filter-toolbar">
+          <input
+            id="preset-search"
+            type="search"
+            class="search-input"
+            placeholder="Filter presets (e.g., orbit, 35mm, flash, drone)..."
+          />
+          <div id="category-pills" class="category-pills" role="group" aria-label="Preset categories"></div>
+        </div>
+
+        <!-- Ordered Multi-Move Queue Bar (Stage 2) -->
+        <div id="sequence-bar" class="sequence-bar hidden">
+          <div class="sequence-head">
+            <span>Ordered Camera Chain (max 3):</span>
+            <button id="btn-clear-sequence" class="text-btn" type="button">Reset</button>
+          </div>
+          <div id="sequence-chips" class="sequence-chips"></div>
+        </div>
+
+        <div id="preset-grid" class="preset-grid"></div>
+      </section>
+
+      <!-- Scene / Subject Input + @Element Lock -->
+      <section class="panel-section">
+        <div class="section-header">
+          <label for="subject-input">Scene &amp; Subject Direction</label>
+          <button id="btn-clear-input" class="text-btn" type="button">Clear</button>
+        </div>
+        <textarea
+          id="subject-input"
+          rows="3"
+          placeholder="Describe subject action or scene (e.g., 'Woman in obsidian trench coat walks across rain-slicked Tokyo crosswalk, turns calmly toward camera')..."
+        ></textarea>
+        <div class="element-row">
+          <label for="character-lock" class="sr-only">Character / @Element Lock</label>
+          <input
+            id="character-lock"
+            type="text"
+            class="compact-input"
+            placeholder="@Character / Element lock (optional, e.g., '@mina_soul, silver wristwatch')"
+          />
+        </div>
+      </section>
+
+      <!-- Fine-Tuning Controls -->
+      <section class="panel-section controls-grid">
+        <div class="control-item" id="control-intensity">
+          <label for="select-intensity">Motion Intensity</label>
+          <select id="select-intensity">
+            <option value="subtle">Subtle</option>
+            <option value="cinematic" selected>Cinematic</option>
+            <option value="aggressive">Aggressive</option>
+          </select>
+        </div>
+
+        <div class="control-item" id="control-aspect">
+          <label for="select-aspect">Aspect Ratio</label>
+          <select id="select-aspect">
+            <option value="16:9">16:9 Cinema</option>
+            <option value="9:16">9:16 Reels / Shorts</option>
+            <option value="1:1">1:1 Square</option>
+            <option value="4:3">4:3 Classic</option>
+            <option value="3:4">3:4 Portrait</option>
+            <option value="2.39:1">2.39:1 Anamorphic</option>
+          </select>
+        </div>
+
+        <div class="control-item" id="control-lighting">
+          <label for="select-lighting">Lighting Continuity</label>
+          <select id="select-lighting"></select>
+        </div>
+
+        <div class="control-item" id="control-duration">
+          <label for="select-duration">Target Duration</label>
+          <select id="select-duration">
+            <option value="5s" selected>5 Seconds</option>
+            <option value="8s">8 Seconds</option>
+            <option value="12s">12 Seconds</option>
+            <option value="15s">15 Seconds (Max)</option>
+          </select>
+        </div>
+
+        <div class="control-item" id="control-resolution">
+          <label for="select-resolution">Resolution</label>
+          <select id="select-resolution">
+            <option value="720p">720p HD</option>
+            <option value="1080p" selected>1080p Cinema</option>
+            <option value="2k">2K Keyframe</option>
+            <option value="4k">4K Master</option>
+          </select>
+        </div>
+
+        <div class="control-item" id="control-batch">
+          <label for="select-batch">Flow Batch</label>
+          <select id="select-batch">
+            <option value="1" selected>x1 Variation</option>
+            <option value="2">x2 Variations</option>
+            <option value="3">x3 Variations</option>
+            <option value="4">x4 Variations</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Collapsible Pro Optics & Film Setup (Cinema Studio 4.0) -->
+      <details id="optics-panel" class="panel-section accordion">
+        <summary class="accordion-summary">
+          <span>Pro Optics &amp; Film Setup</span>
+          <span id="optics-summary-badge" class="meta-badge">Auto</span>
+        </summary>
+        <div class="accordion-body">
+          <div class="controls-grid">
+            <div class="control-item">
+              <label for="select-camera">Camera Body</label>
+              <select id="select-camera"></select>
+            </div>
+            <div class="control-item">
+              <label for="select-lens">Lens Glass</label>
+              <select id="select-lens"></select>
+            </div>
+            <div class="control-item">
+              <label for="select-aperture">Aperture</label>
+              <select id="select-aperture"></select>
+            </div>
+            <div class="control-item">
+              <label for="select-palette">Color Palette</label>
+              <select id="select-palette"></select>
+            </div>
+            <div class="control-item">
+              <label for="select-genre">Film Genre</label>
+              <select id="select-genre"></select>
+            </div>
+            <div class="control-item">
+              <label for="select-era">Film Era</label>
+              <select id="select-era"></select>
+            </div>
+          </div>
+          <div class="accordion-footer">
+            <button id="btn-reset-optics" class="text-btn" type="button">Reset Optics to Auto</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- Toggles -->
+      <section class="panel-section toggles-row">
+        <label class="toggle-chip" id="toggle-audio-wrap">
+          <input type="checkbox" id="chk-audio" checked />
+          <span>Native Audio Cue</span>
+        </label>
+        <label class="toggle-chip">
+          <input type="checkbox" id="chk-autosubmit" />
+          <span>Auto-Click Generate</span>
+        </label>
+        <label class="toggle-chip" id="toggle-autosync-wrap">
+          <input type="checkbox" id="chk-autosync" />
+          <span>Sync Flow Settings</span>
+        </label>
+      </section>
+
+      <!-- Live Compiled Prompt Preview -->
+      <section class="panel-section">
+        <div class="section-header">
+          <h2>Compiled Director Prompt</h2>
+          <div class="section-tools">
+            <button id="btn-save-shot" class="text-btn accent-link" type="button">+ Save Shot</button>
+            <button id="btn-reset-compiled" class="text-btn hidden" type="button">Recompile</button>
+            <span class="meta-badge" id="char-count">0 chars</span>
+          </div>
+        </div>
+        <textarea id="compiled-preview" class="compiled-box" rows="6"></textarea>
+      </section>
+    </main>
+
+    <!-- Sticky Action Footer -->
+    <footer class="action-footer">
+      <button id="btn-copy" class="btn-secondary" type="button" title="Copy prompt (Ctrl+Shift+C)">Copy</button>
+      <button id="btn-inject" class="btn-primary" type="button" title="Inject prompt to active tab (Ctrl+Enter)">
+        <span id="btn-inject-label">Inject to Google Flow</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </footer>
+
+    <!-- History Drawer Overlay -->
+    <aside id="history-drawer" class="drawer hidden" aria-label="Recent Generations">
+      <div class="drawer-header">
+        <h3>Recent Generations</h3>
+        <div class="drawer-actions">
+          <button id="btn-clear-history" class="text-btn danger" type="button">Clear All</button>
+          <button id="btn-close-history" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </aside>
+
+    <!-- Storyboard / Shot List Drawer Overlay -->
+    <aside id="storyboard-drawer" class="drawer hidden" aria-label="Storyboard Shot List">
+      <div class="drawer-header">
+        <h3>Storyboard Shot List</h3>
+        <div class="drawer-actions">
+          <button id="btn-copy-storyboard" class="text-btn accent-link" type="button">Copy Script</button>
+          <button id="btn-clear-storyboard" class="text-btn danger" type="button">Clear</button>
+          <button id="btn-close-storyboard" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+      <div id="storyboard-list" class="history-list"></div>
+    </aside>
+
+    <!-- Custom Preset Builder & Pack Export/Import Drawer -->
+    <aside id="custom-preset-drawer" class="drawer hidden" aria-label="Custom Preset Builder">
+      <div class="drawer-header">
+        <h3 id="custom-drawer-title">Custom Preset Builder</h3>
+        <div class="drawer-actions">
+          <button id="btn-close-custom" class="icon-btn" type="button">✕</button>
+        </div>
+      </div>
+      <div class="drawer-body">
+        <form id="custom-preset-form" class="custom-form">
+          <div class="form-row">
+            <label for="cp-stage">Target Pipeline Stage</label>
+            <select id="cp-stage">
+              <option value="stage2">Stage 2 — Camera Motion (Omni Flash)</option>
+              <option value="stage1">Stage 1 — Keyframe / Soul (Nano Banana)</option>
+            </select>
+          </div>
+          <div class="controls-grid">
+            <div class="form-row">
+              <label for="cp-name">Preset Name *</label>
+              <input id="cp-name" type="text" class="compact-input" placeholder="e.g., Tokyo Drift Whip" required />
+            </div>
+            <div class="form-row">
+              <label for="cp-badge">Badge (max 12)</label>
+              <input id="cp-badge" type="text" class="compact-input" placeholder="CUSTOM" maxlength="12" />
+            </div>
+          </div>
+
+          <div id="cp-stage2-fields" class="custom-stage-fields">
+            <div class="controls-grid">
+              <div class="form-row">
+                <label for="cp-s2-category">Category</label>
+                <select id="cp-s2-category">
+                  <option value="Dynamic">Dynamic</option>
+                  <option value="Orbit">Orbit</option>
+                  <option value="Aerial">Aerial</option>
+                  <option value="Tracking">Tracking</option>
+                  <option value="Classic">Classic</option>
+                  <option value="Optical">Optical</option>
+                  <option value="Handheld">Handheld</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label for="cp-s2-duration">Default Duration</label>
+                <select id="cp-s2-duration">
+                  <option value="5s">5s</option>
+                  <option value="8s">8s</option>
+                  <option value="12s">12s</option>
+                  <option value="15s">15s</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="cp-s2-trajectory">Camera Trajectory *</label>
+              <textarea id="cp-s2-trajectory" rows="3" placeholder="Describe camera path, angle, and pacing..."></textarea>
+            </div>
+            <div class="form-row">
+              <label for="cp-s2-physics">Physics &amp; Optics Notes</label>
+              <input id="cp-s2-physics" type="text" class="compact-input" placeholder="e.g., Strong foreground parallax, crisp shutter blur..." />
+            </div>
+            <div class="form-row">
+              <label for="cp-s2-audio">Native Audio Cue</label>
+              <input id="cp-s2-audio" type="text" class="compact-input" placeholder="e.g., Deep tire screech fading into neon rain..." />
+            </div>
+          </div>
+
+          <div id="cp-stage1-fields" class="custom-stage-fields hidden">
+            <div class="controls-grid">
+              <div class="form-row">
+                <label for="cp-s1-category">Category</label>
+                <select id="cp-s1-category">
+                  <option value="Cinema">Cinema</option>
+                  <option value="Editorial">Editorial</option>
+                  <option value="Retro">Retro</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Night">Night</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label for="cp-s1-tag">Style Tag</label>
+                <input id="cp-s1-tag" type="text" class="compact-input" placeholder="e.g., Film / Lookbook" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="cp-s1-lens">Camera &amp; Lens Spec *</label>
+              <textarea id="cp-s1-lens" rows="2" placeholder="e.g., 50mm Cooke Panchro prime at f/2.0, subtle halation..."></textarea>
+            </div>
+            <div class="form-row">
+              <label for="cp-s1-lighting">Lighting Spec</label>
+              <input id="cp-s1-lighting" type="text" class="compact-input" placeholder="e.g., Soft tungsten rim against cool dusk fill..." />
+            </div>
+            <div class="form-row">
+              <label for="cp-s1-soul">Identity / Soul Lock Rule</label>
+              <input id="cp-s1-soul" type="text" class="compact-input" placeholder="Preserve exact face, hair, and outfit..." />
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary full-width">Save Custom Preset</button>
+        </form>
+
+        <div class="pack-io-box">
+          <h4>Preset Pack Backup (JSON)</h4>
+          <div class="pack-io-actions">
+            <button id="btn-export-presets" class="btn-secondary" type="button">Export JSON</button>
+            <label class="btn-secondary file-label" for="input-import-presets">Import JSON</label>
+            <input id="input-import-presets" type="file" accept="application/json,.json" class="hidden" />
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Selector Binding Status Modal/Banner -->
+    <div id="picker-banner" class="picker-banner hidden">
+      <div class="picker-info">
+        <strong>UI Binding Mode Active</strong>
+        <span id="picker-step-text">Step 1/2: Click the prompt box on the active page.</span>
+      </div>
+      <div class="picker-actions">
+        <button id="btn-reset-selectors" class="text-btn" type="button">Reset Defaults</button>
+        <button id="btn-cancel-picker" class="text-btn danger" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

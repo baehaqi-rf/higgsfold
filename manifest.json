@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "HiggsFold Studio — AI Director Side Panel",
+  "version": "2.0.0",
+  "description": "Higgsfield Cinema Studio 4.0-inspired 2-Stage AI Director Side Panel for Google Flow, Gemini & AI Studio (Nano Banana 2.1 Keyframe + Omni 1.2 Flash Multi-Move Compiler).",
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://flow.google.com/*",
+    "https://labs.google/*",
+    "https://gemini.google.com/*",
+    "https://aistudio.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open HiggsFold Studio",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://flow.google.com/*",
+        "https://labs.google/*",
+        "https://gemini.google.com/*",
+        "https://aistudio.google.com/*"
+      ],
+      "js": [
+        "content/bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
