@@ -920,6 +920,7 @@ function renderPresets() {
     card.append(stageDiv, meta);
 
     const selectCard = () => {
+      el.quickRecipeBtns.forEach((b) => b.classList.remove("active"));
       if (isVideo) {
         if (state.sequenceMode) {
           addToSequence(preset.id);
@@ -1088,14 +1089,21 @@ async function fetchMediaDataUrlFromItem(item) {
   return { dataUrl, mimeType: blob.type || "image/png" };
 }
 
-function isImageStylePrompt(promptText) {
-  if (state.stage === "stage1") return true;
-  if (!promptText) return false;
-  return /^\s*(\[KEYFRAME|A cinematic [^\n]* still keyframe)/i.test(promptText);
+function isImageStylePrompt(promptText, explicitMediaType = null) {
+  if (explicitMediaType === "image") return true;
+  if (explicitMediaType === "video") return false;
+  if (!promptText && state.stage === "stage1") return true;
+  if (promptText && /^\s*(\[KEYFRAME|A cinematic [^\n]* still keyframe)/i.test(promptText)) {
+    return true;
+  }
+  return state.stage === "stage1" && !promptText;
 }
 
-async function syncFlowSettings(tabId, promptOverride = "") {
-  const isImagePrompt = isImageStylePrompt(promptOverride || el.compiledPreview.value);
+async function syncFlowSettings(tabId, promptOverride = "", explicitMediaType = null) {
+  const isImagePrompt = isImageStylePrompt(
+    promptOverride || el.compiledPreview.value,
+    explicitMediaType || (promptOverride ? null : (state.stage === "stage1" ? "image" : "video"))
+  );
   const effectiveSubMode = state.endRefImageDataUrl ? "Frames" : state.flowSubMode;
   const payload = {
     mode: isImagePrompt ? "Image" : "Video",
@@ -1221,6 +1229,7 @@ async function saveShotToStoryboard() {
   const shot = {
     id: Date.now(),
     stage: state.stage.toUpperCase(),
+    mediaType: state.stage === "stage1" ? "image" : "video",
     preset: presetLabel || "Custom",
     prompt: promptText,
     createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -1266,7 +1275,7 @@ async function renderStoryboard() {
       el.compiledPreview.value = shot.prompt;
       el.btnResetCompiled.classList.remove("hidden");
       el.charCount.textContent = `${shot.prompt.length} chars`;
-      await injectPrompt(shot.prompt);
+      await injectPrompt(shot.prompt, shot.mediaType || null);
     });
 
     const upBtn = document.createElement("button");
@@ -1328,7 +1337,17 @@ async function renderStoryboard() {
 }
 
 // Inject Prompt with Concurrency Lock ([BUG-13])
-async function injectPrompt(promptOverride = null) {
+function getInjectSiteLabel(siteKey) {
+  const labelMap = {
+    flow: "Flow",
+    gemini: "Gemini",
+    aistudio: "AI Studio",
+    generic: "Tab"
+  };
+  return labelMap[siteKey] || labelMap.generic;
+}
+
+async function injectPrompt(promptOverride = null, explicitMediaType = null) {
   if (isInjecting) return;
   const promptText = (typeof promptOverride === "string" ? promptOverride : el.compiledPreview.value).trim();
   if (!promptText) {
@@ -1337,7 +1356,6 @@ async function injectPrompt(promptOverride = null) {
   }
 
   isInjecting = true;
-  const prevBtnLabel = el.btnInjectLabel.textContent;
   el.btnInject.disabled = true;
   el.btnInjectLabel.textContent = "Sending…";
 
@@ -1351,7 +1369,7 @@ async function injectPrompt(promptOverride = null) {
     await saveToHistory(promptText);
 
     if (state.autoSyncFlow && state.activeSite === "flow") {
-      await syncFlowSettings(tab.id, promptText);
+      await syncFlowSettings(tab.id, promptText, explicitMediaType);
     }
 
     if (promptOverride === null && (state.refImageDataUrl || state.endRefImageDataUrl)) {
@@ -1363,7 +1381,7 @@ async function injectPrompt(promptOverride = null) {
         );
       }
       if (state.stage === "stage2" && state.endRefImageDataUrl) {
-        await new Promise((r) => setTimeout(r, 220));
+        await new Promise((r) => setTimeout(r, 900));
         await sendImagePayloadToActiveTab(
           state.endRefImageDataUrl,
           state.endRefImageName || "end_frame.webp",
@@ -1394,7 +1412,7 @@ async function injectPrompt(promptOverride = null) {
   } finally {
     isInjecting = false;
     el.btnInject.disabled = false;
-    el.btnInjectLabel.textContent = prevBtnLabel;
+    el.btnInjectLabel.textContent = getInjectSiteLabel(state.activeSite);
   }
 }
 
@@ -1513,7 +1531,13 @@ async function scanAndOpenGrabDrawer() {
       sendEditBtn.textContent = "+ Editing Room";
       sendEditBtn.addEventListener("click", async () => {
         try {
-          const srcForEdit = item.dataUrl || item.src;
+          let srcForEdit = item.dataUrl || item.src;
+          if (!item.dataUrl && item.src && !item.src.startsWith("blob:")) {
+            try {
+              const fetched = await fetchMediaDataUrlFromItem(item);
+              if (fetched?.dataUrl) srcForEdit = fetched.dataUrl;
+            } catch (_) {}
+          }
           await editingController.addExternalClip(
             `Grabbed_${idx + 1}.${item.kind === "video" ? "mp4" : "png"}`,
             srcForEdit,
@@ -1550,7 +1574,11 @@ async function scanAndOpenGrabDrawer() {
       el.grabList.appendChild(card);
     });
   } catch (err) {
-    el.grabList.innerHTML = `<p style="color:#f87171;font-size:12px;">${err?.message || "Scan failed on active tab."}</p>`;
+    el.grabList.innerHTML = "";
+    const errP = document.createElement("p");
+    errP.style.cssText = "color:#f87171;font-size:12px;";
+    errP.textContent = err?.message || "Scan failed on active tab.";
+    el.grabList.appendChild(errP);
   }
 }
 
@@ -1704,6 +1732,11 @@ function switchStage(nextStage) {
 }
 
 // Mode Switching
+document.getElementById("btn-space-switcher")?.addEventListener("click", () => {
+  const next = state.stage === "stage2" ? "stage1" : "stage2";
+  switchStage(next);
+  showToast(`Studio switched to ${next === "stage1" ? "Keyframe & Soul" : "Motion & VFX"}`);
+});
 el.modeBtns.forEach((btn) => {
   btn.addEventListener("click", () => switchStage(btn.dataset.stage));
 });
@@ -2056,7 +2089,7 @@ el.btnSendDualFrames?.addEventListener("click", async () => {
     state.refImageName || "start_frame.png",
     state.refImageMime || "image/png"
   );
-  await new Promise((r) => setTimeout(r, 220));
+  await new Promise((r) => setTimeout(r, 900));
   const ok2 = await sendImagePayloadToActiveTab(
     state.endRefImageDataUrl,
     state.endRefImageName || "end_frame.webp",
@@ -2472,19 +2505,8 @@ el.inputEditClips.addEventListener("change", (e) => {
 el.btnPlayEdit.addEventListener("click", () => editingController.playOrExport(false));
 el.btnExportEdit.addEventListener("click", () => editingController.playOrExport(true));
 el.btnClearEdit.addEventListener("click", () => {
-  const list = editingController.getClips();
-  const ovList = editingController.getOverlays();
-  if (!list.length && !ovList.length) return;
-  while (list.length) {
-    const c = list.pop();
-    if (c.revokeOnRemove && c.url?.startsWith("blob:")) URL.revokeObjectURL(c.url);
-  }
-  while (ovList.length) {
-    const ov = ovList.pop();
-    if (ov.revokeUrl && ov.imageSrc?.startsWith("blob:")) URL.revokeObjectURL(ov.imageSrc);
-  }
-  editingController.renderClips();
-  editingController.renderOverlays();
+  if (!editingController.getClips().length && !editingController.getOverlays().length) return;
+  editingController.clearAll();
   const ctx = el.editCanvas.getContext("2d");
   ctx.fillStyle = "#050507";
   ctx.fillRect(0, 0, el.editCanvas.width, el.editCanvas.height);

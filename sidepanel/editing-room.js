@@ -506,11 +506,14 @@ export function createEditingRoomController(els, showToast) {
       fitMode,
       crossfadeSec,
       prevFrameCanvas,
+      baseCanvas,
+      baseCtx,
       audioCtx,
       audioDest,
       speakerGain,
       timelineOffsetSec = 0
     } = options;
+    const targetCtx = baseCtx || ctx;
     const bounds = validateTrimBounds(clip.inSec, clip.outSec, clip.durationSec);
 
     if (clip.kind === "image") {
@@ -535,7 +538,10 @@ export function createEditingRoomController(els, showToast) {
           }
           const elapsedSec = (now - startTs) / 1000;
           const alpha = crossfadeSec > 0 ? Math.min(1, elapsedSec / crossfadeSec) : 1;
-          drawWithCrossfade(ctx, img, iw, ih, width, height, fitMode, prevFrameCanvas, alpha);
+          drawWithCrossfade(targetCtx, img, iw, ih, width, height, fitMode, prevFrameCanvas, alpha);
+          if (baseCanvas && baseCtx) {
+            ctx.drawImage(baseCanvas, 0, 0, width, height);
+          }
           drawKineticOverlays(ctx, overlays, timelineOffsetSec + elapsedSec, width, height);
           if (now - startTs >= durMs) {
             activeRafId = 0;
@@ -579,13 +585,15 @@ export function createEditingRoomController(els, showToast) {
 
     if (bounds.inSec > 0) {
       await new Promise((resolve) => {
+        let seekTimer = 0;
         const done = () => {
+          clearTimeout(seekTimer);
           video.onseeked = null;
           resolve();
         };
         video.onseeked = done;
         video.currentTime = bounds.inSec;
-        setTimeout(done, 450);
+        seekTimer = setTimeout(done, 450);
       });
     }
 
@@ -609,7 +617,10 @@ export function createEditingRoomController(els, showToast) {
         }
         const elapsedInClip = Math.max(0, video.currentTime - bounds.inSec);
         const alpha = crossfadeSec > 0 ? Math.min(1, elapsedInClip / crossfadeSec) : 1;
-        drawWithCrossfade(ctx, video, vw, vh, width, height, fitMode, prevFrameCanvas, alpha);
+        drawWithCrossfade(targetCtx, video, vw, vh, width, height, fitMode, prevFrameCanvas, alpha);
+        if (baseCanvas && baseCtx) {
+          ctx.drawImage(baseCanvas, 0, 0, width, height);
+        }
         drawKineticOverlays(ctx, overlays, timelineOffsetSec + elapsedInClip, width, height);
         activeRafId = requestAnimationFrame(drawFrame);
       };
@@ -699,7 +710,7 @@ export function createEditingRoomController(els, showToast) {
       }
 
       if (record) {
-        const canvasStream = canvas.captureStream(24);
+        const canvasStream = canvas.captureStream(30);
         const combinedTracks = [...canvasStream.getVideoTracks()];
         if (audioDest) {
           combinedTracks.push(...audioDest.stream.getAudioTracks());
@@ -727,6 +738,10 @@ export function createEditingRoomController(els, showToast) {
         prevFrameCanvas.width = dims.width;
         prevFrameCanvas.height = dims.height;
       }
+      const baseCanvas = document.createElement("canvas");
+      baseCanvas.width = dims.width;
+      baseCanvas.height = dims.height;
+      const baseCtx = baseCanvas.getContext("2d");
 
       if (clips.length === 0) {
         const maxOvEnd = overlays.reduce(
@@ -742,6 +757,8 @@ export function createEditingRoomController(els, showToast) {
             fitMode,
             crossfadeSec: i > 0 ? crossfadeSec : 0,
             prevFrameCanvas: i > 0 ? prevFrameCanvas : null,
+            baseCanvas,
+            baseCtx,
             audioCtx,
             audioDest,
             speakerGain,
@@ -751,7 +768,8 @@ export function createEditingRoomController(els, showToast) {
           if (prevFrameCanvas && !stopRequested) {
             const pCtx = prevFrameCanvas.getContext("2d");
             pCtx.clearRect(0, 0, dims.width, dims.height);
-            pCtx.drawImage(canvas, 0, 0, dims.width, dims.height);
+            // Snapshot overlay-free baseCanvas so overlays never ghost into the next clip crossfade
+            pCtx.drawImage(baseCanvas, 0, 0, dims.width, dims.height);
           }
         }
       }
@@ -789,6 +807,26 @@ export function createEditingRoomController(els, showToast) {
     }
   }
 
+  function clearAll() {
+    stopRequested = true;
+    cleanupActiveVideo();
+    if (activeRecorder && activeRecorder.state === "recording") {
+      try {
+        activeRecorder.stop();
+      } catch (_) {}
+    }
+    while (clips.length) {
+      const c = clips.pop();
+      if (c.revokeOnRemove && c.url?.startsWith("blob:")) URL.revokeObjectURL(c.url);
+    }
+    while (overlays.length) {
+      const o = overlays.pop();
+      if (o.revokeUrl && o.imageSrc?.startsWith("blob:")) URL.revokeObjectURL(o.imageSrc);
+    }
+    renderClips();
+    renderOverlays();
+  }
+
   renderClips();
   renderOverlays();
   return {
@@ -798,6 +836,7 @@ export function createEditingRoomController(els, showToast) {
     renderOverlays,
     getOverlays: () => overlays,
     playOrExport,
+    clearAll,
     renderClips,
     getClips: () => clips
   };

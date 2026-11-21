@@ -320,4 +320,37 @@ test("Camera preset with Morph Target B (endObject) compiles cohesive morph beat
   assert.equal(/from the reference keyframe/.test(stage1NoRef), false);
   assert.equal(/from the uploaded reference image/.test(stage1NoRef), false);
   assert.equal(/\(TikTok Core\)/.test(stage1NoRef), false, "Must not leak internal UI category name into prompt");
+
+  const noirNoRef = compilePrompt(
+    {
+      stage: "stage1",
+      selectedStage1Id: "neon-noir-anamorphic",
+      subject: "cyberpunk courier",
+      lighting: "match-ref",
+      guardrails: true
+    },
+    STAGE1_PRESETS,
+    STAGE2_PRESETS
+  );
+  assert.equal(/consistent with reference/.test(noirNoRef), false, "Must strip 'consistent with reference' when no ref");
+
+  const flashNoRef = compilePrompt(
+    {
+      stage: "stage1",
+      selectedStage1Id: "high-fashion-flash",
+      subject: "chrome handbag",
+      lighting: "match-ref",
+      guardrails: true
+    },
+    STAGE1_PRESETS,
+    STAGE2_PRESETS
+  );
+  assert.equal(/strictly to reference image/.test(flashNoRef), false, "Must strip 'strictly to reference image' when no ref");
+
+  const indoClean = cleanGeminiEnhancedOutput("Tentu, berikut prompt yang telah dioptimalkan:\n\n8.0s neon rain shot.");
+  assert.equal(indoClean, "8.0s neon rain shot.");
+
+  const drama = generateShortDramaStoryboard({ premise: "Midnight rain", shotCount: 2 }, STAGE1_PRESETS, STAGE2_PRESETS);
+  assert.equal(drama[0].mediaType, "image");
+  assert.equal(drama[1].mediaType, "video");
 });

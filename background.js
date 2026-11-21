@@ -8,6 +8,25 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   console.log(`[HiggsFold] Extension ${details.reason} (v4.0.0) — Side Panel ready.`);
 });
 
+const ALLOWED_MEDIA_HOSTS = [
+  "googleusercontent.com",
+  "googleapis.com",
+  "flow.google.com",
+  "labs.google",
+  "gemini.google.com",
+  "higgsfield.ai",
+  "higgs.ai",
+  "cloudfront.net"
+];
+
+const MAX_MEDIA_BYTES = 25 * 1024 * 1024;
+
+function isAllowedMediaHost(hostname) {
+  const host = String(hostname || "").toLowerCase();
+  if (!host) return false;
+  return ALLOWED_MEDIA_HOSTS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
 async function fetchMediaAsDataUrl(url) {
   if (!url || typeof url !== "string") {
     throw new Error("Missing media URL.");
@@ -20,12 +39,32 @@ async function fetchMediaAsDataUrl(url) {
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
     throw new Error(`Unsupported URL protocol: ${parsed.protocol}`);
   }
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} fetching media`);
+  if (!isAllowedMediaHost(parsed.hostname)) {
+    throw new Error(`Blocked media host outside allowlist: ${parsed.hostname}`);
   }
-  const buf = await res.arrayBuffer();
-  const mimeType = res.headers.get("content-type") || "image/png";
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
+  let buf;
+  let mimeType;
+  try {
+    const res = await fetch(url, { credentials: "include", signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} fetching media`);
+    }
+    const contentLen = Number(res.headers.get("content-length") || 0);
+    if (contentLen > MAX_MEDIA_BYTES) {
+      throw new Error(`Media exceeds 25 MB limit (${Math.round(contentLen / (1024 * 1024))} MB).`);
+    }
+    buf = await res.arrayBuffer();
+    if (buf.byteLength > MAX_MEDIA_BYTES) {
+      throw new Error(`Media exceeds 25 MB limit (${Math.round(buf.byteLength / (1024 * 1024))} MB).`);
+    }
+    mimeType = res.headers.get("content-type") || "image/png";
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   const bytes = new Uint8Array(buf);
   let binary = "";
   const chunkSize = 0x8000;
@@ -43,35 +82,56 @@ async function enhanceWithGeminiApi({ apiKey, model = "gemini-2.5-flash", metaPr
   if (!metaPrompt || !metaPrompt.trim()) {
     throw new Error("Blueprint prompt is empty.");
   }
-  const safeModel = encodeURIComponent(model.trim() || "gemini-2.5-flash");
+  const trimmedModel = model.trim() || "gemini-2.5-flash";
+  const safeModel = encodeURIComponent(trimmedModel);
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${safeModel}:generateContent`;
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey.trim()
-    },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: metaPrompt }] }],
-      generationConfig: {
-        temperature: 0.65,
-        maxOutputTokens: 700
-      }
-    })
-  });
-  const data = await res.json().catch(() => ({}));
+  const generationConfig = {
+    temperature: 0.65,
+    maxOutputTokens: 2048
+  };
+  if (trimmedModel.toLowerCase().includes("flash")) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  let res;
+  let data = {};
+  try {
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey.trim()
+      },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: metaPrompt }] }],
+        generationConfig
+      }),
+      signal: controller.signal
+    });
+    data = await res.json().catch(() => ({}));
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   if (!res.ok) {
     const errMsg = data?.error?.message || `Gemini API HTTP ${res.status}`;
     throw new Error(errMsg);
   }
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("").trim();
+  const candidate = data?.candidates?.[0];
+  const text = candidate?.content?.parts?.map((p) => p.text || "").join("").trim();
   if (!text) {
-    throw new Error("Gemini API returned an empty response.");
+    const reason = candidate?.finishReason ? ` (${candidate.finishReason})` : "";
+    throw new Error(`Gemini API returned an empty response${reason}.`);
   }
   return { ok: true, enhancedText: text };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender?.id && chrome?.runtime?.id && sender.id !== chrome.runtime.id) {
+    return false;
+  }
   if (message?.type === "HIGGSFOLD_FETCH_MEDIA_BLOB") {
     fetchMediaAsDataUrl(message.url)
       .then((res) => sendResponse(res))

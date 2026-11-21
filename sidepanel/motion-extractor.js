@@ -18,15 +18,15 @@ function getBeatTag(idx, total) {
   return `BEAT ${idx + 1}`;
 }
 
-function drawAspectCover(ctx, video, dx, dy, dw, dh) {
+function drawAspectContain(ctx, video, dx, dy, dw, dh) {
   const vw = video.videoWidth || 1280;
   const vh = video.videoHeight || 720;
-  const scale = Math.max(dw / vw, dh / vh);
-  const sw = dw / scale;
-  const sh = dh / scale;
-  const sx = (vw - sw) / 2;
-  const sy = (vh - sh) / 2;
-  ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
+  const scale = Math.min(dw / vw, dh / vh);
+  const drawW = vw * scale;
+  const drawH = vh * scale;
+  const offsetX = dx + (dw - drawW) / 2;
+  const offsetY = dy + (dh - drawH) / 2;
+  ctx.drawImage(video, 0, 0, vw, vh, offsetX, offsetY, drawW, drawH);
 }
 
 /**
@@ -44,8 +44,12 @@ export async function extractMotionContactSheet(videoFile) {
 
   try {
     await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error("Video metadata load timed out.")), 8000);
-      video.onloadedmetadata = () => {
+      if (video.readyState >= 2) {
+        resolve();
+        return;
+      }
+      const timer = setTimeout(() => reject(new Error("Video frame data load timed out.")), 8000);
+      video.onloadeddata = () => {
         clearTimeout(timer);
         resolve();
       };
@@ -74,20 +78,26 @@ export async function extractMotionContactSheet(videoFile) {
     for (let i = 0; i < timestamps.length; i += 1) {
       const ts = timestamps[i];
       await new Promise((resolve) => {
+        let seekTimer = 0;
         const done = () => {
+          clearTimeout(seekTimer);
           video.onseeked = null;
           resolve();
         };
+        if (Math.abs((video.currentTime || 0) - ts) < 0.04 && video.readyState >= 2) {
+          resolve();
+          return;
+        }
         video.onseeked = done;
         video.currentTime = ts;
-        setTimeout(done, 900);
+        seekTimer = setTimeout(done, 900);
       });
 
       const col = i % cols;
       const row = Math.floor(i / cols);
       const x = col * cellW;
       const y = row * cellH;
-      drawAspectCover(ctx, video, x + 2, y + 2, cellW - 4, cellH - 4);
+      drawAspectContain(ctx, video, x + 2, y + 2, cellW - 4, cellH - 4);
 
       const label = `${getBeatTag(i, timestamps.length)} • ${ts.toFixed(1)}s`;
       ctx.fillStyle = "rgba(12, 12, 16, 0.78)";

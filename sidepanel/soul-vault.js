@@ -107,8 +107,12 @@ export class SoulVaultStore {
           }
         };
         req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(null);
+        req.onerror = () => {
+          this.dbPromise = null;
+          resolve(null);
+        };
       } catch (_) {
+        this.dbPromise = null;
         resolve(null);
       }
     });

@@ -55,6 +55,17 @@ function buildColorGradeLine(state) {
   return [paletteText, transferText].filter(Boolean).join(" ");
 }
 
+function formatStage1IdentityLock(directive, hasIdentityRef) {
+  if (hasIdentityRef) return directive;
+  return String(directive || "")
+    .replace(
+      /\b(?:strictly to|consistent with|from) (?:the )?(?:uploaded )?reference(?: image)?\b/gi,
+      "with authentic optical micro-texture, true-to-life surface materiality, and natural depth separation"
+    )
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function buildSubjectWithLock(state, fallback) {
   const rawSubject = (state.subject || "").trim() || fallback;
   const charLock = (state.characterLock || "").trim();
@@ -216,20 +227,14 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
         filmSetup
       ];
       if (useGuardrails) {
-        const directive = hasIdentityRef
-          ? preset.soulLockDirective
-          : preset.soulLockDirective.replace(
-              /\bfrom (?:the )?(?:uploaded )?reference image\b/gi,
-              "with authentic optical micro-texture, true-to-life surface materiality, and natural depth separation"
-            );
-        segments.push(directive);
+        segments.push(formatStage1IdentityLock(preset.soulLockDirective, hasIdentityRef));
       }
       return segments.filter(Boolean).join(" ");
     }
 
     const subjectText = buildSubjectWithLock(
       state,
-      "[Subject from uploaded reference image positioned in scene]"
+      "[Subject positioned cleanly in scene]"
     );
     const resolutionTag = state.resolution ? ` • ${state.resolution.toUpperCase()}` : "";
     const lensLine = opticsOverride
@@ -249,13 +254,7 @@ export function compilePrompt(state, stage1Presets, stage2Presets) {
 
     if (filmSetup) lines.push(filmSetup);
     if (useGuardrails) {
-      const directive = hasIdentityRef
-        ? preset.soulLockDirective
-        : preset.soulLockDirective.replace(
-            /\bfrom (?:the )?(?:uploaded )?reference image\b/gi,
-            "with authentic optical micro-texture, true-to-life surface materiality, and natural depth separation"
-          );
-      lines.push(`Identity Lock: ${directive}`);
+      lines.push(`Identity Lock: ${formatStage1IdentityLock(preset.soulLockDirective, hasIdentityRef)}`);
     }
     return lines.join("\n");
   }
@@ -525,6 +524,7 @@ export function generateShortDramaStoryboard(options, stage1Presets, stage2Prese
   shots.push({
     id: `${baseId}-kf`,
     stage: "DRAMA • KEYFRAME",
+    mediaType: "image",
     preset: `Master Anchor (${arc.label})`,
     cameraId: null,
     prompt: keyframePrompt,
@@ -574,6 +574,7 @@ export function generateShortDramaStoryboard(options, stage1Presets, stage2Prese
     shots.push({
       id: `${baseId}-shot-${i + 1}`,
       stage: `DRAMA • SHOT ${i + 1}`,
+      mediaType: "video",
       preset: `${bp.shotType} (${presetObj.name})`,
       cameraId: presetObj.id,
       prompt,
@@ -877,9 +878,9 @@ export function cleanGeminiEnhancedOutput(rawText) {
     out = fenceMatch[1].trim();
   }
 
-  // Remove common chatty lead-in lines
+  // Remove common English & Indonesian chatty lead-in lines
   out = out.replace(
-    /^(?:sure|here(?:'s| is)|certainly|below is)[^\n:]*:\s*\n+/i,
+    /^(?:sure|here(?:'s| is)|certainly|below is|tentu(?: saja)?|baiklah?|berikut(?:\s+(?:adalah|ini))?|ini\s+(?:adalah|prompt))[^\n:]*:\s*\n+/i,
     ""
   ).trim();
 

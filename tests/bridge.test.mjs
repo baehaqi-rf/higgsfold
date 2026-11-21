@@ -468,3 +468,17 @@ test("bridge.js HIGGSFOLD_GEMINI_ENHANCE sends meta-prompt to Gemini tab and cap
   assert.equal(res.enhancedText, "Maximized cinema prompt with rain-soaked highlights.");
   assert.equal(gemCtx.geminiBtn.clicked, 1);
 });
+
+test("bridge.js syncGoogleFlowSettings respects aria-pressed='true' and skips reopening already-matched fallback model", async () => {
+  const ctx = createMockDom({ hostname: "flow.google.com", site: "flow" });
+  ctx.radioImage.setAttribute("aria-pressed", "true");
+  ctx.veoItem.textContent = "Veo 3.1 - Fast";
+  const modelBtn = ctx.document.createElement ? null : null;
+  // Already matched fallback ("Veo 3.1") via Veo 3.1 - Fast? Simulate radioImage already pressed:
+  const res = await ctx.dispatchMsg({
+    type: "HIGGSFOLD_SYNC_FLOW_SETTINGS",
+    payload: { mode: "Image", aspectRatio: "16:9", batchCount: "2" }
+  });
+  assert.equal(res.ok, true);
+  assert.equal(ctx.radioImage.clicked, 0, "Must NOT re-click toggle when aria-pressed='true'");
+});

@@ -5,7 +5,8 @@ import {
   validateTrimBounds,
   computeDrawRect,
   evaluateEasing,
-  computeOverlayTransform
+  computeOverlayTransform,
+  createEditingRoomController
 } from "../sidepanel/editing-room.js";
 import { computeMotionSampleTimestamps } from "../sidepanel/motion-extractor.js";
 import { normalizeSoulEntry } from "../sidepanel/soul-vault.js";
@@ -101,4 +102,37 @@ test("evaluateEasing & computeOverlayTransform compute accurate 60fps kinetic te
   );
   assert.equal(spinObj.visible, true);
   assert.ok(spinObj.scale > 0);
+});
+
+test("createEditingRoomController clearAll cleanly empties overlays and clips", async () => {
+  const makeContainer = () => ({ innerHTML: "", textContent: "", children: [], appendChild(c) { this.children.push(c); }, append(...args) { this.children.push(...args); } });
+  const origDoc = globalThis.document;
+  globalThis.document = {
+    createElement: () => ({
+      className: "",
+      style: {},
+      textContent: "",
+      children: [],
+      addEventListener() {},
+      appendChild(c) { this.children.push(c); },
+      append(...args) { this.children.push(...args); }
+    })
+  };
+  try {
+    const controller = createEditingRoomController(
+      {
+        clipList: makeContainer(),
+        overlayList: makeContainer(),
+        clipCount: { textContent: "" }
+      },
+      () => {}
+    );
+    await controller.addOverlay({ kind: "text", text: "DROP", anim: "pop-scale", startSec: 0, durSec: 2 });
+    assert.equal(controller.getOverlays().length, 1);
+    controller.clearAll();
+    assert.equal(controller.getOverlays().length, 0);
+    assert.equal(controller.getClips().length, 0);
+  } finally {
+    globalThis.document = origDoc;
+  }
 });

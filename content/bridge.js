@@ -6,7 +6,7 @@
 //  - Single-path waterfall image injection, ZWS-safe text injection & Smart Visual DOM Picker (`Bind UI`)
 
 (() => {
-  const BRIDGE_VERSION = 403;
+  const BRIDGE_VERSION = 404;
   if (window.__HIGGSFOLD_BRIDGE_VERSION__ === BRIDGE_VERSION) return;
   if (window.__HIGGSFOLD_BRIDGE_LISTENER__) {
     try {
@@ -36,6 +36,8 @@
         'rich-textarea div.ql-editor[contenteditable="true"][role="textbox"]',
         'div[aria-label="Enter a prompt for Gemini"][contenteditable="true"]',
         'div[aria-label*="Ask Gemini" i][contenteditable="true"]',
+        'div[aria-label*="Minta Gemini" i][contenteditable="true"]',
+        'div[aria-label*="Masukkan perintah" i][contenteditable="true"]',
         'div[data-placeholder*="Ask Gemini" i][contenteditable="true"]',
         'rich-textarea div[contenteditable="true"]',
         'rich-textarea [contenteditable="true"]',
@@ -43,8 +45,11 @@
       ],
       submit: [
         'button[aria-label="Send message"]',
+        'button[aria-label="Kirim pesan"]',
         'button[aria-label*="Send" i]',
+        'button[aria-label*="Kirim" i]',
         'button[mattooltip*="Send" i]',
+        'button[mattooltip*="Kirim" i]',
         'button.send-button'
       ]
     },
@@ -140,6 +145,17 @@
   }
 
   function findFirstVisible(selectors, requireEnabled = false) {
+    // Fast path: check light DOM first to avoid full-DOM '*' shadow traversal on every poll tick
+    for (const sel of selectors) {
+      try {
+        const directNodes = document.querySelectorAll(sel);
+        for (const n of directNodes) {
+          if (isVisible(n) && (!requireEnabled || isInteractiveEnabled(n))) {
+            return n;
+          }
+        }
+      } catch (_) {}
+    }
     for (const sel of selectors) {
       try {
         const nodes = querySelectorAllDeep(sel);
@@ -394,7 +410,10 @@
           exact ||
           radios.find((el) => getCleanToggleText(el).toLowerCase().includes(targetLower));
         if (match) {
-          if (match.getAttribute("aria-checked") !== "true") {
+          const isSelected =
+            match.getAttribute("aria-checked") === "true" ||
+            match.getAttribute("aria-pressed") === "true";
+          if (!isSelected) {
             match.click();
           }
           return getCleanToggleText(match) || candidate;
@@ -452,8 +471,10 @@
     if (modelPriority.length > 0) {
       const modelBtn = overlay.querySelector('button[aria-label="Select model family"]');
       const currentModelText = modelBtn ? getCleanToggleText(modelBtn).toLowerCase() : "";
-      const primaryHint = modelPriority[0].toLowerCase();
-      if (modelBtn && !currentModelText.includes(primaryHint)) {
+      const alreadyMatched = modelPriority.some((hint) =>
+        currentModelText.includes(hint.toLowerCase())
+      );
+      if (modelBtn && !alreadyMatched) {
         modelBtn.click();
         await new Promise((r) => setTimeout(r, 180));
         const menuItems = querySelectorAllDeep(
@@ -472,6 +493,10 @@
           matchedItem.click();
           synced.push(`Model:${chosenLabel}`);
           await new Promise((r) => setTimeout(r, 120));
+        } else {
+          const backdrops = querySelectorAllDeep(".cdk-overlay-backdrop-showing");
+          const topBackdrop = backdrops[backdrops.length - 1];
+          if (topBackdrop) topBackdrop.click();
         }
       }
     }
@@ -479,7 +504,8 @@
     if (!wasAlreadyOpen) {
       await new Promise((r) => setTimeout(r, 90));
       if (findSettingsOverlay()) {
-        const backdrop = document.querySelector(".cdk-overlay-backdrop-showing");
+        const backdrops = querySelectorAllDeep(".cdk-overlay-backdrop-showing");
+        const backdrop = backdrops[backdrops.length - 1];
         if (backdrop) {
           backdrop.click();
         } else if (trigger) {
@@ -491,9 +517,12 @@
     return { ok: true, synced };
   }
 
-  async function blobUrlToDataUrl(blobUrl) {
+  async function blobUrlToDataUrl(blobUrl, maxBytes = 18 * 1024 * 1024) {
     const res = await fetch(blobUrl);
     const blob = await res.blob();
+    if (blob.size > maxBytes) {
+      throw new Error(`Blob exceeds ${Math.round(maxBytes / (1024 * 1024))} MB transfer limit`);
+    }
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve({ dataUrl: reader.result, mimeType: blob.type || "image/png" });
@@ -525,9 +554,9 @@
       let mimeType = isVideo ? "video/mp4" : "image/png";
       if (rawSrc.startsWith("data:")) {
         dataUrl = rawSrc;
-      } else if (rawSrc.startsWith("blob:") && !isVideo) {
+      } else if (rawSrc.startsWith("blob:")) {
         try {
-          const conv = await blobUrlToDataUrl(rawSrc);
+          const conv = await blobUrlToDataUrl(rawSrc, isVideo ? 18 * 1024 * 1024 : 10 * 1024 * 1024);
           dataUrl = conv.dataUrl;
           mimeType = conv.mimeType;
         } catch (_) {}
@@ -779,7 +808,16 @@
           // Single-Path Waterfall:
           // 1) Try native Clipboard Paste into prompt editor if present
           if (inputEl) {
-            const beforeThumbs = querySelectorAllDeep('img[src^="blob:"], img[src^="data:"]').length;
+            const composerScope =
+              (typeof inputEl.closest === "function" &&
+                inputEl.closest("form, [class*='composer' i], main")) ||
+              document;
+            const countThumbs = () =>
+              composerScope.querySelectorAll
+                ? composerScope.querySelectorAll('img, [class*="thumb" i], [class*="attachment" i]').length
+                : querySelectorAllDeep('img[src^="blob:"], img[src^="data:"]').length;
+
+            const beforeThumbs = countThumbs();
             inputEl.focus();
             const pasteEvt = new ClipboardEvent("paste", {
               bubbles: true,
@@ -787,8 +825,8 @@
               clipboardData: dt
             });
             const notCancelled = inputEl.dispatchEvent(pasteEvt);
-            await new Promise((r) => setTimeout(r, 120));
-            const afterThumbs = querySelectorAllDeep('img[src^="blob:"], img[src^="data:"]').length;
+            await new Promise((r) => setTimeout(r, 180));
+            const afterThumbs = countThumbs();
 
             if (!notCancelled || pasteEvt.defaultPrevented || afterThumbs > beforeThumbs) {
               sendResponse({ ok: true, site: siteKey, method: "paste" });
@@ -796,16 +834,21 @@
             }
           }
 
-          // 2) Fallback: native hidden/visible file input upload
+          // 2) Fallback: native file input assignment FIRST (only defineProperty on mock/legacy failure)
           if (fileInput) {
+            let assigned = false;
             try {
-              Object.defineProperty(fileInput, "files", {
-                configurable: true,
-                get: () => dt.files
-              });
+              fileInput.files = dt.files;
+              assigned = Boolean(fileInput.files && fileInput.files.length > 0);
             } catch (_) {
+              assigned = false;
+            }
+            if (!assigned) {
               try {
-                fileInput.files = dt.files;
+                Object.defineProperty(fileInput, "files", {
+                  configurable: true,
+                  get: () => dt.files
+                });
               } catch (_) {}
             }
             fileInput.dispatchEvent(new Event("input", { bubbles: true }));
@@ -874,10 +917,7 @@
           let stableTicks = 0;
           const requiredStableTicks = timeoutMs > 5000 ? 4 : 2;
           const stopSelectors = [
-            'button[aria-label*="Stop" i]',
-            'button[mattooltip*="Stop" i]',
-            'button.stop-button',
-            '[data-test-id*="stop" i]'
+            'button[aria-label*="Stop" i], button[aria-label*="Hentikan" i], button[mattooltip*="Stop" i], button[mattooltip*="Hentikan" i], button.stop-button, [data-test-id*="stop" i]'
           ];
 
           while (Date.now() - start <= timeoutMs) {
