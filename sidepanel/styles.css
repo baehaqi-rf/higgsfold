@@ -137,6 +137,14 @@ body {
   place-items: center;
 }
 
+.brand-mark img,
+.hf-brand-svg img {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: block;
+}
+
 .brand-text {
   min-width: 0;
   overflow: hidden;
@@ -1703,7 +1711,7 @@ select option {
     text-align: center;
     gap: 8px;
   }
-  .hf-hero-thumb { width: 44px; height: 44px; border-radius: 12px; }
+  .hf-hero-thumb { width: 52px; height: 52px; border-radius: 12px; filter: drop-shadow(0 6px 16px rgba(209, 254, 23, 0.14)); }
   .hf-hero-title {
     font-family: var(--font-grotesk);
     font-size: 24px;
